@@ -420,6 +420,26 @@ feeds:
   # ---------- Topic sections: sports, entertainment, business, technology, science, health ----------
   # `category` files these stories under their own heading on the site.
 
+  - slug: indian-express-politics            # verify
+    outlet: indian-express
+    name: The Indian Express
+    language: en
+    category: politics
+    section: india
+    country: IN
+    ownership: private
+    url: https://indianexpress.com/section/political-pulse/feed/
+
+  - slug: hindustan-times-politics            # verify
+    outlet: hindustan-times
+    name: Hindustan Times
+    language: en
+    category: politics
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml
+
   - slug: the-hindu-sport            # verify
     outlet: the-hindu
     name: The Hindu
