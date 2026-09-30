@@ -2,6 +2,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AssistantModule } from './assistant/assistant.module';
 import { DatabaseModule } from './database/database.module';
 import { EngagementModule } from './engagement/engagement.module';
 import { MetaModule } from './meta/meta.module';
@@ -17,6 +18,7 @@ import { StoriesModule } from './stories/stories.module';
     StoriesModule,
     MetaModule,
     EngagementModule,
+    AssistantModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
