@@ -20,3 +20,5 @@ services:
         generateValue: true
       - key: ADMIN_TOKEN      # opens /admin (moderation); Render generates it, copy it from the dashboard
         generateValue: true
+      - key: ANTHROPIC_API_KEY  # switches on story chat and headline translation; leave empty to disable
+        sync: false

@@ -6,6 +6,7 @@ import { ShareButton } from '../components/ShareButton';
 import { EmptyState, Loadable, Notice } from '../components/States';
 import { StoryList, StoryMeta } from '../components/StoryRow';
 import { TwoSides } from '../components/TwoSides';
+import { AskAssistant } from '../components/AskAssistant';
 import { Discussion } from '../components/Discussion';
 import { ClaimsBoard } from '../components/ClaimsBoard';
 import { countryName, flag, langGroup, languageName } from '../lang';
@@ -337,6 +338,8 @@ function StoryView({ story }: { story: StoryDetail }) {
           <HeadlineList headlines={story.articles} showTime />
         </details>
       </section>
+
+      <AskAssistant storyId={story.id} />
 
       <Discussion storyId={story.id} />
 
