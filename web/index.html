@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Nazariya: same news, different story</title>
+    <meta name="description" content="Nazariya reads English and Hindi newsrooms every 30 minutes, groups headlines about the same event, and shows where coverage agrees and where it differs." />
+    <meta name="theme-color" content="#F6F7F9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12142A" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Nazariya" />
+    <meta property="og:title" content="Nazariya: same news, different story" />
+    <meta property="og:description" content="One event, every headline. Compare how English and Hindi outlets cover the same story." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Rozha+One&display=swap" rel="stylesheet" />
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('nazariya:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        var l = localStorage.getItem('nazariya:lang');
+        if (l === 'hi') document.documentElement.lang = 'hi';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Nazariya needs JavaScript to load the latest stories.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+name: News pipeline
+
+on:
+  schedule:
+    # Every 15 minutes, at odd minutes: GitHub delays jobs queued on the hour.
+    # News feeds update every few minutes, so more often than this adds load, not news,
+    # and would use up Neon's free compute hours. Public repos get unlimited Actions minutes.
+    - cron: "2,17,32,47 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: news-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: pipeline/.model-cache
+          key: embed-model-paraphrase-multilingual-MiniLM-L12-v2-v1
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch, cluster and analyse
+        run: python -m nazariya.run --init-db
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional overrides live in repository variables (Settings > Secrets and variables > Actions).
+          ANALYSIS_MODEL: ${{ vars.ANALYSIS_MODEL || 'claude-haiku-4-5-20251001' }}
+          DAILY_ANALYSIS_LIMIT: ${{ vars.DAILY_ANALYSIS_LIMIT || '30' }}

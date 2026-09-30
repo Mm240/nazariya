@@ -1,0 +1,272 @@
+# Outlets Nazariya follows. Edit freely: add, remove, or set `enabled: false`.
+# Run `python -m nazariya.check_feeds` after any change to confirm each feed
+# responds and parses.
+#
+# Feed URLs were taken from publishers' published RSS links (checked against
+# FeedSpot's Indian and Hindi news directories in Aug 2026). Entries marked
+# "verify" come from older listings and are the most likely to need updating.
+#
+# `group` names the ownership group. Sister outlets that publish in both
+# languages (NDTV / NDTV India, News18 / News18 Hindi, India Today / Aaj Tak...)
+# are the most direct test of language framing: same newsroom owner, different
+# audience. The app shows the group next to the outlet name.
+#
+# Choosing outlets is an editorial decision. The list deliberately spans
+# ownership groups and editorial positions, and the app never labels outlets
+# politically; it shows what each one published and lets readers compare.
+
+feeds:
+  # ---------- English ----------
+  - slug: the-hindu
+    name: The Hindu
+    language: en
+    url: https://www.thehindu.com/news/national/?service=rss
+    homepage: https://www.thehindu.com
+
+  - slug: indian-express
+    name: The Indian Express
+    language: en
+    url: https://indianexpress.com/feed/
+    homepage: https://indianexpress.com
+
+  - slug: ndtv
+    name: NDTV
+    language: en
+    url: https://feeds.feedburner.com/NDTV-LatestNews
+    homepage: https://www.ndtv.com
+    group: NDTV
+
+  - slug: hindustan-times
+    name: Hindustan Times
+    language: en
+    url: https://www.hindustantimes.com/feeds/rss/latest/rssfeed.xml
+    homepage: https://www.hindustantimes.com
+    group: HT Media
+
+  - slug: times-of-india
+    name: The Times of India
+    language: en
+    url: https://timesofindia.indiatimes.com/rssfeedstopstories.cms
+    homepage: https://timesofindia.indiatimes.com
+    group: Times Group
+
+  - slug: india-today
+    name: India Today
+    language: en
+    url: https://www.indiatoday.in/rss/1206578
+    homepage: https://www.indiatoday.in
+    group: India Today Group
+
+  - slug: scroll
+    name: Scroll
+    language: en
+    url: https://feeds.feedburner.com/ScrollinArticles.rss
+    homepage: https://scroll.in
+
+  - slug: news18
+    name: News18
+    language: en
+    url: https://www.news18.com/commonfeeds/v1/eng/rss/text.xml
+    homepage: https://www.news18.com
+    group: Network18
+
+  - slug: times-now
+    name: Times Now
+    language: en
+    url: https://www.timesnownews.com/feeds/gns-en-latest.xml
+    homepage: https://www.timesnownews.com
+    group: Times Group
+
+  - slug: india-tv
+    name: India TV
+    language: en
+    url: https://www.indiatvnews.com/rssnews/topstory.xml
+    homepage: https://www.indiatvnews.com
+
+  - slug: the-quint
+    name: The Quint
+    language: en
+    url: https://prod-qt-images.s3.amazonaws.com/production/thequint/feed.xml
+    homepage: https://www.thequint.com
+
+  - slug: opindia
+    name: OpIndia
+    language: en
+    url: https://www.opindia.com/feed/
+    homepage: https://www.opindia.com
+
+  - slug: national-herald
+    name: National Herald
+    language: en
+    url: https://prod-qt-images.s3.amazonaws.com/production/nationalherald/feed.xml
+    homepage: https://www.nationalheraldindia.com
+
+  # ---------- Hindi ----------
+  - slug: amar-ujala
+    name: Amar Ujala
+    language: hi
+    url: https://www.amarujala.com/rss/breaking-news.xml
+    homepage: https://www.amarujala.com
+
+  - slug: navbharat-times
+    name: Navbharat Times
+    language: hi
+    url: https://navbharattimes.indiatimes.com/langapi/sitemap/gstandrssfeed.xml
+    homepage: https://navbharattimes.indiatimes.com
+    group: Times Group
+
+  - slug: aaj-tak
+    name: Aaj Tak
+    language: hi
+    url: https://www.aajtak.in/rssfeeds/?id=home
+    homepage: https://www.aajtak.in
+    group: India Today Group
+
+  - slug: ndtv-india
+    name: NDTV India
+    language: hi
+    url: https://feeds.feedburner.com/ndtvkhabar-latest
+    homepage: https://ndtv.in
+    group: NDTV
+
+  - slug: news18-hindi
+    name: News18 Hindi
+    language: hi
+    url: https://hindi.news18.com/rss/khabar/nation/nation.xml
+    homepage: https://hindi.news18.com
+    group: Network18
+
+  - slug: tv9-bharatvarsh
+    name: TV9 Bharatvarsh
+    language: hi
+    url: https://www.tv9hindi.com/feed
+    homepage: https://www.tv9hindi.com
+
+  - slug: oneindia-hindi
+    name: Oneindia Hindi
+    language: hi
+    url: https://hindi.oneindia.com/rss/hindi-news-fb.xml
+    homepage: https://hindi.oneindia.com
+
+  - slug: bbc-hindi     
+    name: BBC Hindi
+    language: hi
+    url: https://feeds.bbci.co.uk/hindi/rss.xml
+    homepage: https://www.bbc.com/hindi
+
+  - slug: dainik-jagran 
+    name: Dainik Jagran
+    language: hi
+    url: http://rss.jagran.com/rss/news/national.xml
+    homepage: https://www.jagran.com
+
+  - slug: live-hindustan
+    name: Live Hindustan
+    language: hi
+    url: https://feed.livehindustan.com/rss/3127
+    homepage: https://www.livehindustan.com
+    group: HT Media
+
+  # ---------- World sections of outlets above ----------
+  # `outlet:` attaches the feed to an existing outlet; `section: world` marks
+  # its articles as international news (shown under the World tab).
+  # Run `python -m nazariya.check_feeds` after adding feeds: URLs here marked
+  # "verify" follow each site's published pattern but weren't tested from India.
+
+  - slug: the-hindu-world
+    outlet: the-hindu
+    section: world
+    name: The Hindu
+    language: en
+    url: https://www.thehindu.com/news/international/?service=rss
+
+  - slug: indian-express-world
+    outlet: indian-express
+    section: world
+    name: The Indian Express
+    language: en
+    url: https://indianexpress.com/section/world/feed/
+
+  - slug: hindustan-times-world
+    outlet: hindustan-times
+    section: world
+    name: Hindustan Times
+    language: en
+    url: https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml
+
+  - slug: times-of-india-world
+    outlet: times-of-india
+    section: world
+    name: The Times of India
+    language: en
+    url: https://timesofindia.indiatimes.com/rssfeeds/296589292.cms
+
+  - slug: ndtv-world     
+    outlet: ndtv
+    section: world
+    name: NDTV
+    language: en
+    url: https://feeds.feedburner.com/ndtvnews-world-news
+
+  - slug: aaj-tak-world       # 404 as of Sep 2026: find the current world feed on aajtak.in
+    enabled: false
+    outlet: aaj-tak
+    section: world
+    name: Aaj Tak
+    language: hi
+    url: https://www.aajtak.in/rssfeeds/?id=world
+
+  - slug: news18-hindi-world
+    outlet: news18-hindi
+    section: world
+    name: News18 Hindi
+    language: hi
+    url: https://hindi.news18.com/rss/khabar/world/world.xml
+
+  # ---------- International outlets ----------
+  # `scope: international` marks them as non-Indian newsrooms, so a world story
+  # shows how Indian outlets framed it next to how the wider world did.
+
+  - slug: bbc-world
+    name: BBC News
+    language: en
+    scope: international
+    section: world
+    url: https://feeds.bbci.co.uk/news/world/rss.xml
+    homepage: https://www.bbc.com/news/world
+
+  - slug: al-jazeera
+    name: Al Jazeera
+    language: en
+    scope: international
+    section: world
+    url: https://www.aljazeera.com/xml/rss/all.xml
+    homepage: https://www.aljazeera.com
+
+  - slug: the-guardian-world
+    name: The Guardian
+    language: en
+    scope: international
+    section: world
+    url: https://www.theguardian.com/world/rss
+    homepage: https://www.theguardian.com/world
+
+# Items whose URL contains any of these are skipped (galleries, videos, web stories).
+skip_url_patterns:
+  - /photos/
+  - /photo-gallery/
+  - /photogallery/
+  - /videos/
+  - /video/
+  - /web-stories/
+  - /webstories/
+  - /web-story/
+  - /visualstories/
+
+# Items whose headline contains any of these (case-insensitive) are skipped.
+skip_title_keywords:
+  - horoscope
+  - rashifal
+  - राशिफल
+  - panchang
+  - पंचांग

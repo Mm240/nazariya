@@ -1,0 +1,22 @@
+# Render Blueprint: New > Blueprint > pick this repo. Creates the API as a free web service.
+services:
+  - type: web
+    name: nazariya-api
+    runtime: node
+    plan: free
+    region: singapore        # closest Render region to India; pick the same region for Neon
+    rootDir: api
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL     # Neon pooled connection string
+        sync: false
+      - key: CORS_ORIGINS     # e.g. https://nazariya.vercel.app
+        sync: false
+      - key: VISITOR_SALT     # salts the anonymous reader ids; Render generates it
+        generateValue: true
+      - key: ADMIN_TOKEN      # opens /admin (moderation); Render generates it, copy it from the dashboard
+        generateValue: true
