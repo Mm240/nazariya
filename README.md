@@ -2,7 +2,11 @@
 
 **Same news. Different story.** Nazariya reads English and Hindi Indian newsrooms every 15 minutes, groups headlines about the same event across both languages, and shows where coverage agrees and where it differs, outlet by outlet.
 
-> **Live site:** _add your Vercel URL here_ · **API docs:** _your Render URL_ `/api/docs`
+### 🌐 [Live site: nazariya-six.vercel.app](https://nazariya-six.vercel.app)
+
+**API docs:** [nazariya-api.onrender.com/api/docs](https://nazariya-api.onrender.com/api/docs) · **Status:** news refreshed every 15 minutes by GitHub Actions
+
+> The API runs on a free plan that sleeps when idle, so the first visit can take up to a minute to wake it.
 
 It never labels outlets as left, right or biased. It puts what each one published side by side and lets the reader compare.
 

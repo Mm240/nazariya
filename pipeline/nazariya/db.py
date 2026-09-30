@@ -71,25 +71,48 @@ class NewArticle:
 def insert_articles(
     conn: psycopg.Connection, candidates: list[ArticleCandidate], outlet_ids: dict[str, int]
 ) -> list[NewArticle]:
-    """Insert candidates; return only the ones that were new."""
-    inserted: list[NewArticle] = []
+    """Insert candidates; return only the ones that were new.
+
+    Two round trips in total, however many candidates: the pipeline often runs far
+    from the database (GitHub's servers in the US, Neon in Singapore), where one
+    query per article would cost ~0.2 s each and keep the database awake for minutes.
+    """
+    if not candidates:
+        return []
     with conn.cursor() as cur:
-        for c in candidates:
-            cur.execute(
-                """
-                INSERT INTO articles (outlet_id, url, url_hash, title, excerpt, language, published_at, section)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (url_hash) DO NOTHING
-                RETURNING id
-                """,
-                (outlet_ids[c.outlet_slug], c.url, c.url_hash, c.title, c.excerpt, c.language, c.published_at,
-                 c.section),
-            )
-            row = cur.fetchone()
-            if row:
-                inserted.append(NewArticle(row["id"], c.title, c.excerpt, c.language, c.published_at))
+        cur.execute(
+            "SELECT url_hash FROM articles WHERE url_hash = ANY(%s)", ([c.url_hash for c in candidates],)
+        )
+        existing = {r["url_hash"] for r in cur.fetchall()}
+        fresh = [c for c in candidates if c.url_hash not in existing]
+        if not fresh:
+            return []
+        cur.execute(
+            """
+            INSERT INTO articles (outlet_id, url, url_hash, title, excerpt, language, published_at, section)
+            SELECT * FROM unnest(%s::int[], %s::text[], %s::text[], %s::text[], %s::text[],
+                                 %s::text[], %s::timestamptz[], %s::text[])
+            ON CONFLICT (url_hash) DO NOTHING
+            RETURNING id, url_hash
+            """,
+            (
+                [outlet_ids[c.outlet_slug] for c in fresh],
+                [c.url for c in fresh],
+                [c.url_hash for c in fresh],
+                [c.title for c in fresh],
+                [c.excerpt for c in fresh],
+                [c.language for c in fresh],
+                [c.published_at for c in fresh],
+                [c.section for c in fresh],
+            ),
+        )
+        ids = {r["url_hash"]: r["id"] for r in cur.fetchall()}
     conn.commit()
-    return inserted
+    return [
+        NewArticle(ids[c.url_hash], c.title, c.excerpt, c.language, c.published_at)
+        for c in fresh
+        if c.url_hash in ids
+    ]
 
 
 @dataclass
