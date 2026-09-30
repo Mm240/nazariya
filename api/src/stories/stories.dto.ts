@@ -7,7 +7,16 @@ export type StoryFilter = (typeof STORY_FILTERS)[number];
 
 export const SECTIONS = ['all', 'india', 'world'] as const;
 
+export const CATEGORIES = [
+  'politics', 'world', 'business', 'sports', 'entertainment', 'technology', 'science', 'health', 'crime',
+] as const;
+
 export class ListStoriesQuery {
+  @ApiPropertyOptional({ enum: CATEGORIES, description: 'Only stories in this topic.' })
+  @IsOptional()
+  @IsIn(CATEGORIES)
+  category?: (typeof CATEGORIES)[number];
+
   @ApiPropertyOptional({ enum: SECTIONS, default: 'all', description: '`world`: international news.' })
   @IsOptional()
   @IsIn(SECTIONS)

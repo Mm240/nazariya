@@ -161,3 +161,71 @@ def test_facts_disputed_accepts_string_or_missing(value, expected):
 def test_nonsense_flags_are_still_rejected():
     with pytest.raises(ValueError):
         validate_analysis({**GOOD, "same_event": "maybe"}, {"the-hindu"})
+
+
+
+def test_claims_keep_only_attributed_well_formed_entries():
+    claims = [
+        {"claim": {"en": "The US struck first.", "hi": "पहले अमेरिका ने हमला किया।"},
+         "claimed_by": {"en": "Iranian government", "hi": "ईरान सरकार"},
+         "outlets": ["aaj-tak", "aaj-tak"], "status": "one_sided"},
+        {"claim": {"en": "Explosions were heard.", "hi": "धमाके सुने गए।"},
+         "claimed_by": {"en": "Witnesses", "hi": "गवाह"}, "outlets": ["the-hindu"], "status": "confirmed"},
+        {"claim": {"en": "Made up", "hi": "गढ़ा"}, "claimed_by": {"en": "x", "hi": "y"},
+         "outlets": ["ghost"], "status": "confirmed"},                      # nobody in the story said it
+        {"claim": {"en": "Bad status", "hi": "ग़लत"}, "claimed_by": {"en": "x", "hi": "y"},
+         "outlets": ["the-hindu"], "status": "true"},                       # not an allowed status
+    ]
+    out = validate_analysis({**GOOD, "claims": claims}, {"the-hindu", "aaj-tak"})
+    assert [c["status"] for c in out["claims"]] == ["one_sided", "confirmed"]
+    assert out["claims"][0]["outlets"] == ["aaj-tak"]
+
+
+def test_claims_missing_is_an_empty_list():
+    assert validate_analysis(dict(GOOD), {"the-hindu"})["claims"] == []
+
+
+def test_articles_carry_country_and_ownership_into_the_prompt():
+    from datetime import datetime, timezone
+
+    from nazariya.analyze import build_user_message
+
+    msg = build_user_message([{
+        "outlet_slug": "press-tv", "outlet_name": "Press TV", "outlet_country": "IR",
+        "outlet_ownership": "state", "language": "en", "title": "Headline", "excerpt": None,
+        "published_at": datetime(2026, 9, 30, tzinfo=timezone.utc),
+    }])
+    assert 'country="IR"' in msg and 'ownership="state"' in msg
+
+
+
+DEBATE = {
+    "contested": True,
+    "question": {"en": "Was the captain's call right?", "hi": "क्या कप्तान का फ़ैसला सही था?"},
+    "for": [{"en": "Commentators call it bold.", "hi": "टिप्पणीकार इसे साहसी कहते हैं।", "outlets": ["the-hindu"]}],
+    "against": [],
+}
+
+
+def test_stances_and_category_are_validated():
+    data = {
+        **GOOD,
+        "category": "sports",
+        "debate": DEBATE,
+        "stances": [
+            {"outlet": "the-hindu", "stance": "for", "reason": {"en": "Calls it 'bold'.", "hi": "इसे 'साहसी' कहता है।"}},
+            {"outlet": "the-hindu", "stance": "against", "reason": {"en": "dup", "hi": "dup"}},   # one per outlet
+            {"outlet": "aaj-tak", "stance": "maybe", "reason": {"en": "x", "hi": "y"}},        # bad stance
+            {"outlet": "ghost", "stance": "for", "reason": {"en": "x", "hi": "y"}},           # not in story
+        ],
+    }
+    out = validate_analysis(data, {"the-hindu", "aaj-tak"})
+    assert out["category"] == "sports"
+    assert [(s["outlet"], s["stance"]) for s in out["stances"]] == [("the-hindu", "for")]
+
+
+def test_no_debate_means_no_stances_and_unknown_category_is_other():
+    out = validate_analysis({**GOOD, "category": "gossip", "debate": {"contested": False},
+                             "stances": [{"outlet": "the-hindu", "stance": "for", "reason": {"en": "a", "hi": "b"}}]},
+                            {"the-hindu"})
+    assert out["category"] == "other" and out["stances"] == []

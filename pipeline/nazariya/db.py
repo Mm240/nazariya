@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -43,13 +45,14 @@ def upsert_outlets(conn: psycopg.Connection, feeds: list[Feed]) -> dict[str, int
         for slug, f in outlets.items():
             cur.execute(
                 """
-                INSERT INTO outlets (slug, name, language, homepage, media_group, scope, active)
-                VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                INSERT INTO outlets (slug, name, language, homepage, media_group, scope, country, ownership, active)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
                 ON CONFLICT (slug) DO UPDATE
                   SET name = EXCLUDED.name, language = EXCLUDED.language, homepage = EXCLUDED.homepage,
-                      media_group = EXCLUDED.media_group, scope = EXCLUDED.scope, active = TRUE
+                      media_group = EXCLUDED.media_group, scope = EXCLUDED.scope,
+                      country = EXCLUDED.country, ownership = EXCLUDED.ownership, active = TRUE
                 """,
-                (slug, f.name, f.language, f.homepage, f.media_group, f.scope),
+                (slug, f.name, f.language, f.homepage, f.media_group, f.scope, f.country, f.ownership),
             )
         # Outlets removed from feeds.yaml stay (their articles are still linked) but are hidden.
         cur.execute("UPDATE outlets SET active = FALSE WHERE NOT (slug = ANY(%s))", (list(outlets),))
@@ -68,6 +71,12 @@ class NewArticle:
     published_at: datetime
 
 
+def _meaningfully_different(old: str, new: str) -> bool:
+    """Ignore whitespace, case and punctuation-only changes."""
+    squash = lambda t: re.sub(r"[\W_]+", "", t.casefold())  # noqa: E731
+    return bool(new) and squash(old) != squash(new)
+
+
 def insert_articles(
     conn: psycopg.Connection, candidates: list[ArticleCandidate], outlet_ids: dict[str, int]
 ) -> list[NewArticle]:
@@ -81,17 +90,30 @@ def insert_articles(
         return []
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT url_hash FROM articles WHERE url_hash = ANY(%s)", ([c.url_hash for c in candidates],)
+            "SELECT id, url_hash, title FROM articles WHERE url_hash = ANY(%s)", ([c.url_hash for c in candidates],)
         )
-        existing = {r["url_hash"] for r in cur.fetchall()}
+        existing = {r["url_hash"]: r for r in cur.fetchall()}
+        # Outlets sometimes rewrite a headline after publishing; keep every version.
+        edits = [
+            (existing[c.url_hash]["id"], existing[c.url_hash]["title"], c.title)
+            for c in candidates
+            if c.url_hash in existing and _meaningfully_different(existing[c.url_hash]["title"], c.title)
+        ]
+        if edits:
+            cur.executemany(
+                "INSERT INTO headline_edits (article_id, old_title, new_title) VALUES (%s, %s, %s)", edits
+            )
+            cur.executemany("UPDATE articles SET title = %s WHERE id = %s", [(new, aid) for aid, _, new in edits])
         fresh = [c for c in candidates if c.url_hash not in existing]
         if not fresh:
+            conn.commit()
             return []
         cur.execute(
             """
-            INSERT INTO articles (outlet_id, url, url_hash, title, excerpt, language, published_at, section)
+            INSERT INTO articles (outlet_id, url, url_hash, title, excerpt, language, published_at, section,
+                                  image_url, category)
             SELECT * FROM unnest(%s::int[], %s::text[], %s::text[], %s::text[], %s::text[],
-                                 %s::text[], %s::timestamptz[], %s::text[])
+                                 %s::text[], %s::timestamptz[], %s::text[], %s::text[], %s::text[])
             ON CONFLICT (url_hash) DO NOTHING
             RETURNING id, url_hash
             """,
@@ -104,6 +126,8 @@ def insert_articles(
                 [c.language for c in fresh],
                 [c.published_at for c in fresh],
                 [c.section for c in fresh],
+                [c.image_url for c in fresh],
+                [c.category for c in fresh],
             ),
         )
         ids = {r["url_hash"]: r["id"] for r in cur.fetchall()}
@@ -241,7 +265,8 @@ def recompute_story_stats(conn: psycopg.Connection, story_ids: list[int]) -> Non
               languages       = sub.languages,
               first_seen_at   = sub.first_at,
               last_article_at = sub.last_at,
-              section         = sub.section
+              section         = sub.section,
+              category        = sub.category
             FROM (
               SELECT story_id,
                      sum(embedding)                                  AS centroid,
@@ -251,7 +276,9 @@ def recompute_story_stats(conn: psycopg.Connection, story_ids: list[int]) -> Non
                      min(published_at)                               AS first_at,
                      max(published_at)                               AS last_at,
                      CASE WHEN avg((section = 'world')::int) >= 0.5
-                          THEN 'world' ELSE 'india' END             AS section
+                          THEN 'world' ELSE 'india' END             AS section,
+                     coalesce(mode() WITHIN GROUP (ORDER BY category)
+                                FILTER (WHERE category <> 'general'), 'general') AS category
               FROM articles
               WHERE story_id = ANY(%s) AND embedding IS NOT NULL
               GROUP BY story_id
@@ -292,6 +319,7 @@ def story_articles_for_analysis(conn: psycopg.Connection, story_id: int, limit: 
             SELECT * FROM (
               SELECT DISTINCT ON (a.outlet_id)
                      o.slug AS outlet_slug, o.name AS outlet_name, a.language,
+                     o.country AS outlet_country, o.ownership AS outlet_ownership,
                      a.title, a.excerpt, a.published_at
               FROM articles a JOIN outlets o ON o.id = a.outlet_id
               WHERE a.story_id = %s

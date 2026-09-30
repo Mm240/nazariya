@@ -1,4 +1,5 @@
-export type Lang = 'en' | 'hi';
+/** ISO 639-1 code: 'en', 'hi', 'ar', 'fa', 'ur', 'fr'… (the interface itself is English/Hindi). */
+export type Lang = string;
 
 export interface Bilingual {
   en: string;
@@ -11,6 +12,10 @@ export interface OutletRef {
   language: Lang;
   mediaGroup: string | null;
   scope?: 'indian' | 'international';
+  /** Where the outlet is based (ISO 3166). */
+  country?: string;
+  /** 'private', 'public' (public broadcaster) or 'state'. */
+  ownership?: 'private' | 'public' | 'state';
 }
 
 export interface HeadlineRef {
@@ -32,7 +37,7 @@ export interface StorySummary {
   sampleHeadlines: HeadlineRef[];
   outlets: OutletRef[];
   /** Number of outlets covering the story, per language. */
-  coverage: Record<Lang, number>;
+  coverage: { en: number; hi: number; other: number };
   articleCount: number;
   outletCount: number;
   languages: Lang[];
@@ -47,6 +52,12 @@ export interface StorySummary {
   commentCount: number;
   /** Readers' answers to the two-sides question. */
   votes: VoteCounts;
+  /** The picture an outlet published with its article, credited to that outlet. */
+  image: { url: string; outlet: string; articleUrl: string } | null;
+  /** politics, business, sports, entertainment, technology, science, health, crime… or null. */
+  category: string | null;
+  /** True when any outlet changed its headline after publishing. */
+  headlineEdited: boolean;
 }
 
 export interface VoteCounts {
@@ -65,6 +76,13 @@ export interface Argument {
   text: Bilingual;
   /** Outlets whose coverage contains this argument. */
   outlets: OutletRef[];
+}
+
+export interface Claim {
+  claim: Bilingual;
+  claimedBy: Bilingual;
+  outlets: OutletRef[];
+  status: 'confirmed' | 'one_sided' | 'disputed';
 }
 
 export interface Debate {
@@ -86,6 +104,10 @@ export interface StoryAnalysis {
   framing: OutletFraming[];
   /** For and against, only as reported in the coverage; null for uncontested stories. */
   debate: Debate | null;
+  /** Who claims what, who carries it, and how well it is sourced. */
+  claims: Claim[];
+  /** With a debate: which side each outlet's own coverage leans to, and why. */
+  stances: { outlet: OutletRef; stance: 'for' | 'against' | 'neutral'; reason: Bilingual }[];
   model: string;
   analyzedAt: string;
   /** How many outlets had covered the story when it was analysed. */
@@ -104,6 +126,10 @@ export interface StoryDetail extends StorySummary {
   analysis: StoryAnalysis | null;
   articles: HeadlineRef[];
   timeline: TimelinePoint[];
+  /** Headlines outlets changed after publishing, newest first. */
+  headlineEdits: { outlet: OutletRef; url: string; oldTitle: string; newTitle: string; seenAt: string }[];
+  /** The first outlet to publish, overall and per language. */
+  firstReports: { language: string; outlet: OutletRef; publishedAt: string }[];
 }
 
 export interface RelatedStory {
@@ -126,6 +152,9 @@ export interface AnalysisContent {
   common_ground: Bilingual[];
   differences: Bilingual[];
   outlet_framing: { outlet: string; en: string; hi: string }[];
+  category?: string;
+  stances?: { outlet: string; stance: 'for' | 'against' | 'neutral'; reason: Bilingual }[];
+  claims?: { claim: Bilingual; claimed_by: Bilingual; outlets: string[]; status: Claim['status'] }[];
   /** Absent in analyses written before this field existed. */
   debate?: {
     question: Bilingual;

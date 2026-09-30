@@ -2248,3 +2248,413 @@ p {
     max-width: none;
   }
 }
+
+/* ---------- Global: a third colour for every language beyond English and Hindi ---------- */
+
+:root {
+  --other: #0e7c72;
+  --other-soft: #e2f3f0;
+}
+
+:root[data-theme='dark'] {
+  --other: #5cc8ba;
+  --other-soft: #173a38;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --other: #5cc8ba;
+    --other-soft: #173a38;
+  }
+}
+
+.bar__seg--other {
+  background: var(--other);
+}
+
+.quote--other {
+  border-left-color: var(--other);
+}
+
+.quote--other .quote__outlet {
+  color: var(--other);
+}
+
+/* Right-to-left headlines (Arabic, Persian, Urdu) keep their rule on the reading side. */
+.quote__text[dir='auto']:dir(rtl) {
+  text-align: right;
+}
+
+.chip--other {
+  background: var(--other-soft);
+  color: var(--other);
+}
+
+.chip__state {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.press--other {
+  border-top-color: var(--other);
+}
+
+.press--other .press__title {
+  color: var(--other);
+}
+
+.press-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tag--state {
+  border-color: var(--hi);
+  color: var(--hi);
+}
+
+.tag--public {
+  border-color: var(--en);
+  color: var(--en);
+}
+
+.flag-emoji {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+/* ---------- Claims board ---------- */
+
+.claims__intro {
+  max-width: 66ch;
+  margin: -0.4rem 0 1.2rem;
+  font-size: 0.95rem;
+}
+
+.claims__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 0.9rem;
+}
+
+.claim {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 5px solid var(--muted);
+}
+
+.claim--confirmed {
+  border-left-color: var(--other);
+}
+
+.claim--one_sided {
+  border-left-color: var(--en);
+  border-left-style: dashed;
+}
+
+.claim--disputed {
+  border-left-color: var(--hi);
+}
+
+.claim__status {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.claim--confirmed .claim__status {
+  color: var(--other);
+}
+
+.claim--one_sided .claim__status {
+  color: var(--en);
+}
+
+.claim--disputed .claim__status {
+  color: var(--hi);
+}
+
+.claim__text {
+  font-family: var(--display);
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.claim__text:lang(hi) {
+  line-height: 1.55;
+}
+
+.claim__by {
+  font-size: 0.95rem;
+}
+
+.claim__sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1000px) {
+  .press-grid--three {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .press-grid--three {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* World stories: one column per country */
+.press-grid--countries {
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.press--country {
+  border-top-color: var(--ink);
+}
+
+.press--country .press__title {
+  color: var(--ink);
+}
+
+.meta__flags {
+  margin-right: 0.35rem;
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Photos ---------- */
+
+.story-image {
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--rule);
+}
+
+.story-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-image--hero {
+  margin-top: 1.25rem;
+  aspect-ratio: 21 / 9;
+  max-height: 26rem;
+}
+
+.story-image--thumb {
+  flex: none;
+  width: 9.5rem;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+}
+
+.story-image figcaption {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(10, 12, 30, 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.row--with-image {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Badges ---------- */
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0 -0.2rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.badge--breaking {
+  border-color: var(--hi);
+  color: var(--hi);
+  background: var(--hi-soft);
+}
+
+.badge--edited {
+  border-style: dashed;
+  color: var(--ink);
+}
+
+/* ---------- Topic tabs scroll sideways on small screens ---------- */
+
+.tabs--topics {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.tabs--topics::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs--topics button {
+  flex: none;
+}
+
+.filters {
+  flex-wrap: wrap;
+}
+
+/* ---------- First reports ---------- */
+
+.first-reports {
+  margin-top: 1rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  font-size: 0.95rem;
+  max-width: 70ch;
+}
+
+.first-reports__mark {
+  margin-right: 0.4rem;
+}
+
+/* ---------- Who leans which way ---------- */
+
+.leanings__intro {
+  margin: -0.4rem 0 1.2rem;
+  max-width: 70ch;
+}
+
+.leanings__intro strong {
+  color: var(--ink);
+}
+
+.leanings__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.leaning {
+  border-top: 5px solid var(--ink);
+  padding-top: 0.85rem;
+}
+
+.leaning--against {
+  border-top-style: dashed;
+}
+
+.leaning--neutral {
+  border-top-color: var(--rule);
+}
+
+.leaning__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--display);
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.leaning__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.press__list--grid {
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+}
+
+/* ---------- Headline edits ---------- */
+
+.edits__intro {
+  margin: -0.4rem 0 1rem;
+}
+
+.edits__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.edit {
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px dashed var(--rule);
+}
+
+.edit__old {
+  margin-top: 0.4rem;
+  color: var(--muted);
+}
+
+.edit__old del {
+  text-decoration-color: var(--hi);
+  text-decoration-thickness: 2px;
+}
+
+.edit__new {
+  margin-top: 0.2rem;
+  font-weight: 700;
+}
+
+.edit__new a {
+  text-decoration: none;
+}
+
+@media (max-width: 860px) {
+  .leanings__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-image--thumb {
+    width: 6.5rem;
+  }
+
+  .story-image--hero {
+    aspect-ratio: 16 / 9;
+  }
+}

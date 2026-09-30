@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -19,6 +20,9 @@ def _env_int(name: str, default: int) -> int:
     return int(os.environ.get(name, default))
 
 
+CATEGORIES = ("general", "politics", "business", "sports", "entertainment", "technology", "science", "health")
+
+
 @dataclass(frozen=True)
 class Feed:
     slug: str  # unique per feed, e.g. "the-hindu" or "the-hindu-world"
@@ -31,6 +35,9 @@ class Feed:
     outlet_slug: str | None = None  # set when several feeds belong to one outlet; defaults to slug
     section: str = "india"  # "india" or "world"
     scope: str = "indian"  # "indian" or "international" outlet
+    country: str = "IN"  # where the outlet is based (ISO 3166 code)
+    ownership: str = "private"  # "private", "public" (public broadcaster) or "state"
+    category: str = "general"  # topic of the feed: politics, business, sports, entertainment...
 
     @property
     def outlet(self) -> str:
@@ -148,9 +155,16 @@ def load_feeds(path: Path) -> list[Feed]:
             outlet_slug=item.get("outlet"),
             section=item.get("section", "india"),
             scope=item.get("scope", "indian"),
+            country=str(item.get("country", "IN")).upper(),
+            ownership=item.get("ownership", "private"),
+            category=item.get("category", "general"),
         )
-        if feed.language not in ("en", "hi"):
-            raise ValueError(f"{feed.slug}: language must be 'en' or 'hi'")
+        if not re.fullmatch(r"[a-z]{2}", feed.language):
+            raise ValueError(f"{feed.slug}: language must be a two-letter code like 'en', 'hi' or 'ar'")
+        if feed.category not in CATEGORIES:
+            raise ValueError(f"{feed.slug}: category must be one of {', '.join(CATEGORIES)}")
+        if feed.ownership not in ("private", "public", "state"):
+            raise ValueError(f"{feed.slug}: ownership must be 'private', 'public' or 'state'")
         if feed.section not in ("india", "world"):
             raise ValueError(f"{feed.slug}: section must be 'india' or 'world'")
         if feed.scope not in ("indian", "international"):

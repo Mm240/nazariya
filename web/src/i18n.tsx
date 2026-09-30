@@ -12,8 +12,8 @@ const en = {
   themeToDark: 'Switch to dark mode',
   themeToLight: 'Switch to light mode',
 
-  intro: (outlets: number, en: number, hi: number) =>
-    `${outlets} newsrooms, ${en} English and ${hi} Hindi, read every 15 minutes. Headlines about the same event are put side by side so you can see where coverage agrees and where it doesn't.`,
+  intro: (outlets: number, _en: number, _hi: number, countries = 1) =>
+    `${outlets} newsrooms in ${countries} ${countries === 1 ? 'country' : 'countries'}, from India's English and Hindi press to both sides of world conflicts, read every 15 minutes. Headlines about the same event are put side by side so you can see where coverage agrees and where it doesn't.`,
   introFallback:
     'English and Hindi newsrooms, read every 15 minutes. Headlines about the same event are put side by side so you can see where coverage agrees and where it doesn’t.',
   lastUpdated: (time: string) => `Last checked ${time}.`,
@@ -26,18 +26,36 @@ const en = {
   readStory: 'Compare the coverage',
 
   outletsCount: (n: number) => (n === 1 ? '1 outlet' : `${n} outlets`),
-  coverage: (en: number, hi: number) =>
-    en && hi
-      ? `${en + hi} outlets (${en} English, ${hi} Hindi)`
-      : `${en + hi} ${en ? 'English' : 'Hindi'} ${en + hi === 1 ? 'outlet' : 'outlets'}`,
+  coverage: (en: number, hi: number, other = 0) => {
+    const n = en + hi + other;
+    const parts = [en ? `${en} English` : '', hi ? `${hi} Hindi` : '', other ? `${other} in other languages` : ''].filter(Boolean);
+    if (parts.length > 1) return `${n} outlets (${parts.join(', ')})`;
+    const noun = n === 1 ? 'outlet' : 'outlets';
+    return en ? `${n} English ${noun}` : hi ? `${n} Hindi ${noun}` : `${n} ${noun} in other languages`;
+  },
   updated: (time: string) => `updated ${time}`,
-  coverageLabel: (en: number, hi: number) => `Covered by ${en} English and ${hi} Hindi outlets`,
+  coverageLabel: (en: number, hi: number, other = 0) =>
+    `Covered by ${en} English, ${hi} Hindi and ${other} other-language outlets`,
   notAnalyzed: 'Comparison not written yet',
   disputed: 'Outlets report conflicting facts',
 
   live: 'Live',
   newStories: 'New stories just came in.',
   showNew: 'Show them',
+
+  claimsTitle: 'Who claims what',
+  claimsIntro:
+    'Each claim, who makes it, and which outlets carry it. The status reflects sourcing only: Nazariya does not decide which side is right.',
+  claimedBy: 'Claimed by',
+  carriedBy: 'Carried by',
+  status: {
+    confirmed: 'Confirmed by independent sources',
+    one_sided: 'One side’s claim',
+    disputed: 'Disputed: sources contradict each other',
+  } as Record<string, string>,
+  ownership: { private: 'Private', public: 'Public broadcaster', state: 'State media' } as Record<string, string>,
+  otherPress: 'Other languages',
+  basedIn: (country: string) => `Based in ${country}`,
 
   twoSides: 'Two sides',
   forSide: 'For',
@@ -122,6 +140,28 @@ const en = {
   nothingOpen: 'Nothing open.',
   sendFailed: 'That didn’t go through. Check your connection and try again.',
 
+  topics: {
+    all: 'All news', india: 'India', world: 'World', politics: 'Politics', business: 'Business',
+    sports: 'Sports', entertainment: 'Entertainment', technology: 'Tech', science: 'Science',
+    health: 'Health', crime: 'Crime',
+  } as Record<string, string>,
+  breaking: 'Breaking',
+  edited: 'Headline changed',
+  imageCredit: (outlet: string) => `Photo: ${outlet}`,
+  leaningTitle: 'Who leans which way',
+  leaningIntro: 'Each outlet’s own headline and excerpt, sorted by which side of the question it leans to.',
+  leanFor: 'Leans for',
+  leanAgainst: 'Leans against',
+  leanNeutral: 'Just reporting',
+  allCoverage: 'All coverage',
+  editsTitle: 'Headlines that changed',
+  editsIntro: 'Outlets sometimes rewrite a headline after publishing. Nazariya keeps every version it saw.',
+  editsNone: '',
+  firstReported: (outlet: string, time: string) => `First reported by ${outlet}, ${time}.`,
+  languageFollowed: (language: string, outlet: string, gap: string) => `First in ${language}: ${outlet}, ${gap} later.`,
+  duration: (minutes: number) =>
+    minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60 ? `${minutes % 60} min` : ''}`.trim(),
+
   // story page
   back: 'All stories',
   otherLanguageTitle: 'हिंदी में',
@@ -129,6 +169,8 @@ const en = {
   differ: 'Where coverage differs',
   noDifferences: 'Coverage is essentially the same across outlets.',
   framing: 'How each outlet framed it',
+  framingByCountry: 'How each country’s media told it',
+  coveredFrom: 'Covered from',
   englishPress: 'English press',
   hindiPress: 'Hindi press',
   noFramingYet: 'Joined after the comparison was written.',
@@ -206,8 +248,8 @@ const hi: Strings = {
   themeToDark: 'डार्क मोड चालू करें',
   themeToLight: 'लाइट मोड चालू करें',
 
-  intro: (outlets, en, hi) =>
-    `${outlets} न्यूज़रूम, ${en} अंग्रेज़ी और ${hi} हिंदी, हर 15 मिनट में पढ़े जाते हैं। एक ही घटना की ख़बरें साथ-साथ रखी जाती हैं, ताकि आप देख सकें कि कवरेज कहाँ मिलती है और कहाँ अलग होती है।`,
+  intro: (outlets, _en, _hi, countries = 1) =>
+    `${countries} देशों के ${outlets} न्यूज़रूम, भारत के अंग्रेज़ी और हिंदी मीडिया से लेकर दुनिया के संघर्षों के दोनों पक्षों तक, हर 15 मिनट में पढ़े जाते हैं। एक ही घटना की ख़बरें साथ-साथ रखी जाती हैं, ताकि आप देख सकें कि कवरेज कहाँ मिलती है और कहाँ अलग होती है।`,
   introFallback:
     'अंग्रेज़ी और हिंदी न्यूज़रूम, हर 15 मिनट में पढ़े जाते हैं। एक ही घटना की ख़बरें साथ-साथ रखी जाती हैं, ताकि आप देख सकें कि कवरेज कहाँ मिलती है और कहाँ अलग होती है।',
   lastUpdated: (time) => `पिछली जाँच ${time}।`,
@@ -220,15 +262,32 @@ const hi: Strings = {
   readStory: 'कवरेज की तुलना देखें',
 
   outletsCount: (n) => `${n} संस्थान`,
-  coverage: (en, hi) => (en && hi ? `${en + hi} संस्थान (${en} अंग्रेज़ी, ${hi} हिंदी)` : `${en + hi} ${en ? 'अंग्रेज़ी' : 'हिंदी'} संस्थान`),
+  coverage: (en, hi, other = 0) => {
+    const parts = [en ? `${en} अंग्रेज़ी` : '', hi ? `${hi} हिंदी` : '', other ? `${other} अन्य भाषाएँ` : ''].filter(Boolean);
+    return parts.length > 1 ? `${en + hi + other} संस्थान (${parts.join(', ')})` : `${parts[0] ?? ''} संस्थान`;
+  },
   updated: (time) => `${time} अपडेट`,
-  coverageLabel: (en, hi) => `${en} अंग्रेज़ी और ${hi} हिंदी संस्थानों ने कवर किया`,
+  coverageLabel: (en, hi, other = 0) => `${en} अंग्रेज़ी, ${hi} हिंदी और ${other} अन्य भाषाओं के संस्थानों ने कवर किया`,
   notAnalyzed: 'तुलना अभी लिखी नहीं गई',
   disputed: 'तथ्यों पर संस्थान एकमत नहीं',
 
   live: 'लाइव',
   newStories: 'नई ख़बरें आई हैं।',
   showNew: 'दिखाएँ',
+
+  claimsTitle: 'कौन क्या दावा कर रहा है',
+  claimsIntro:
+    'हर दावा, उसे करने वाला पक्ष, और उसे छापने वाले संस्थान। स्थिति सिर्फ़ स्रोतों पर आधारित है: नज़रिया यह तय नहीं करता कि कौन सही है।',
+  claimedBy: 'दावा करने वाला',
+  carriedBy: 'छापने वाले',
+  status: {
+    confirmed: 'स्वतंत्र स्रोतों से पुष्टि',
+    one_sided: 'एक पक्ष का दावा',
+    disputed: 'विवादित: स्रोत एक-दूसरे से अलग',
+  },
+  ownership: { private: 'निजी', public: 'सार्वजनिक प्रसारक', state: 'सरकारी मीडिया' },
+  otherPress: 'अन्य भाषाएँ',
+  basedIn: (country) => `${country} में स्थित`,
 
   twoSides: 'दो पक्ष',
   forSide: 'पक्ष में',
@@ -308,12 +367,35 @@ const hi: Strings = {
   nothingOpen: 'कुछ बाक़ी नहीं।',
   sendFailed: 'यह नहीं भेजा जा सका। कनेक्शन जाँचें और फिर कोशिश करें।',
 
+  topics: {
+    all: 'सभी ख़बरें', india: 'देश', world: 'दुनिया', politics: 'राजनीति', business: 'कारोबार',
+    sports: 'खेल', entertainment: 'मनोरंजन', technology: 'टेक', science: 'विज्ञान', health: 'सेहत', crime: 'अपराध',
+  },
+  breaking: 'ताज़ा',
+  edited: 'हेडलाइन बदली गई',
+  imageCredit: (outlet) => `फ़ोटो: ${outlet}`,
+  leaningTitle: 'कौन किस तरफ़ झुका',
+  leaningIntro: 'हर संस्थान का अपना शीर्षक और अंश, इस हिसाब से कि वह सवाल के किस पक्ष की ओर झुकता है।',
+  leanFor: 'पक्ष की ओर',
+  leanAgainst: 'विपक्ष की ओर',
+  leanNeutral: 'सिर्फ़ ख़बर',
+  allCoverage: 'पूरी कवरेज',
+  editsTitle: 'जो हेडलाइन बदलीं',
+  editsIntro: 'संस्थान कभी-कभी छापने के बाद हेडलाइन बदल देते हैं। नज़रिया हर देखा गया संस्करण रखता है।',
+  editsNone: '',
+  firstReported: (outlet, time) => `सबसे पहले ${outlet} ने ख़बर दी, ${time}।`,
+  languageFollowed: (language, outlet, gap) => `${language} में सबसे पहले: ${outlet}, ${gap} बाद।`,
+  duration: (minutes) =>
+    minutes < 60 ? `${minutes} मिनट` : `${Math.floor(minutes / 60)} घंटे ${minutes % 60 ? `${minutes % 60} मिनट` : ''}`.trim(),
+
   back: 'सभी ख़बरें',
   otherLanguageTitle: 'In English',
   agree: 'जिस पर सभी सहमत हैं',
   differ: 'कवरेज में अंतर',
   noDifferences: 'सभी संस्थानों की कवरेज लगभग एक जैसी है।',
   framing: 'किसने कैसे दिखाया',
+  framingByCountry: 'हर देश के मीडिया ने कैसे बताया',
+  coveredFrom: 'कहाँ से कवरेज',
   englishPress: 'अंग्रेज़ी मीडिया',
   hindiPress: 'हिंदी मीडिया',
   noFramingYet: 'तुलना लिखे जाने के बाद जुड़ा।',
@@ -434,7 +516,7 @@ export function pick(text: Bilingual, lang: Lang): string {
 }
 
 /** The title to show for a story: the neutral AI headline if written, else the newest original headline. */
-export function storyTitle(story: StorySummary, lang: Lang): { text: string; lang: Lang; original?: HeadlineRef } {
+export function storyTitle(story: StorySummary, lang: Lang): { text: string; lang: string; original?: HeadlineRef } {
   if (story.headline) return { text: pick(story.headline, lang), lang };
   const lead = story.leadHeadline;
   return lead ? { text: lead.title, lang: lead.language, original: lead } : { text: '', lang };

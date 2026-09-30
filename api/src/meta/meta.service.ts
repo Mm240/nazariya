@@ -4,16 +4,19 @@ import { DatabaseService } from '../database/database.service';
 export interface OutletActivity {
   slug: string;
   name: string;
-  language: 'en' | 'hi';
+  language: string;
   homepage: string | null;
   mediaGroup: string | null;
   scope: 'indian' | 'international';
+  country: string;
+  ownership: 'private' | 'public' | 'state';
   articles24h: number;
   lastArticleAt: string | null;
 }
 
 export interface PipelineStats {
-  outlets: { total: number; en: number; hi: number };
+  outlets: { total: number; en: number; hi: number; other: number; countries: number; languages: number };
+  headlineEdits24h: number;
   articles24h: number;
   activeStories: number;
   crossLanguageStories: number;
@@ -51,7 +54,7 @@ export class MetaService {
 
   outlets(): Promise<OutletActivity[]> {
     return this.db.query<OutletActivity>(
-      `SELECT o.slug, o.name, o.language, o.homepage, o.media_group AS "mediaGroup", o.scope,
+      `SELECT o.slug, o.name, o.language, o.homepage, o.media_group AS "mediaGroup", o.scope, o.country, o.ownership,
               count(a.id) FILTER (WHERE a.published_at > now() - interval '24 hours') AS "articles24h",
               max(a.published_at) AS "lastArticleAt"
        FROM outlets o LEFT JOIN articles a ON a.outlet_id = o.id
@@ -64,12 +67,16 @@ export class MetaService {
   async stats(): Promise<PipelineStats> {
     const [[counts], [lastRun], [ai]] = await Promise.all([
       this.db.query<{
-        total: number; en: number; hi: number; articles24h: number; activeStories: number; crossLanguageStories: number;
+        total: number; en: number; hi: number; other: number; countries: number; languages: number; edits24h: number; articles24h: number; activeStories: number; crossLanguageStories: number;
       }>(
         `SELECT
            (SELECT count(*) FROM outlets WHERE active) AS total,
            (SELECT count(*) FROM outlets WHERE active AND language = 'en') AS en,
            (SELECT count(*) FROM outlets WHERE active AND language = 'hi') AS hi,
+           (SELECT count(*) FROM outlets WHERE active AND language NOT IN ('en', 'hi')) AS other,
+           (SELECT count(DISTINCT country) FROM outlets WHERE active) AS countries,
+           (SELECT count(DISTINCT language) FROM outlets WHERE active) AS languages,
+           (SELECT count(*) FROM headline_edits WHERE seen_at > now() - interval '24 hours') AS "edits24h",
            (SELECT count(*) FROM articles WHERE published_at > now() - interval '24 hours') AS "articles24h",
            (SELECT count(*) FROM stories
              WHERE last_article_at > now() - interval '48 hours' AND outlet_count >= 2) AS "activeStories",
@@ -91,7 +98,8 @@ export class MetaService {
     ]);
     const cost = (ai.inputTokens * this.inputPrice + ai.outputTokens * this.outputPrice) / 1_000_000;
     return {
-      outlets: { total: counts.total, en: counts.en, hi: counts.hi },
+      outlets: { total: counts.total, en: counts.en, hi: counts.hi, other: counts.other, countries: counts.countries, languages: counts.languages },
+      headlineEdits24h: counts.edits24h,
       articles24h: counts.articles24h,
       activeStories: counts.activeStories,
       crossLanguageStories: counts.crossLanguageStories,

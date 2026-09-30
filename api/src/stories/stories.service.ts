@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { ListStoriesQuery } from './stories.dto';
-import { mapDebate, mapFraming, SummaryRow, toSummary } from './story.mapper';
+import { mapClaims, mapDebate, mapFraming, mapStances, SummaryRow, toSummary } from './story.mapper';
 import {
   AnalysisContent,
   Blindspots,
@@ -20,11 +20,12 @@ const HEADLINES_SQL = `
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'title', x.title, 'url', x.url, 'language', x.language, 'publishedAt', x.published_at,
            'outlet', jsonb_build_object('slug', x.slug, 'name', x.name, 'language', x.olang,
-                                        'mediaGroup', x.media_group, 'scope', x.scope)
+                                        'mediaGroup', x.media_group, 'scope', x.scope,
+                                        'country', x.country, 'ownership', x.ownership)
          ) ORDER BY x.published_at DESC), '[]'::jsonb) AS headlines
   FROM (
     SELECT DISTINCT ON (a.outlet_id) a.title, a.url, a.language, a.published_at,
-           o.slug, o.name, o.language AS olang, o.media_group, o.scope
+           o.slug, o.name, o.language AS olang, o.media_group, o.scope, o.country, o.ownership
     FROM articles a JOIN outlets o ON o.id = a.outlet_id
     WHERE a.story_id = p.id
     ORDER BY a.outlet_id, a.published_at DESC
@@ -47,6 +48,10 @@ export class StoriesService {
     if (q.section !== 'all') {
       params.push(q.section);
       where += ` AND s.section = $${params.length}`;
+    }
+    if (q.category) {
+      params.push(q.category);
+      where += ` AND coalesce(nullif(sa.content->>'category', 'other'), nullif(s.category, 'general')) = $${params.length}`;
     }
     if (q.debated) where += ` AND sa.content->'debate' IS NOT NULL AND sa.content->'debate' <> 'null'::jsonb`;
     const items = await this.summaries(where, params, 'score DESC, id DESC', q.limit, q.offset);
@@ -82,7 +87,9 @@ export class StoriesService {
       `SELECT coalesce((SELECT to_id FROM story_redirects WHERE from_id = $1), $1)::bigint AS id`,
       [requestedId],
     );
-    const [summaryRows, meta, articles, timeline] = await Promise.all([
+    const outletJson = `jsonb_build_object('slug', o.slug, 'name', o.name, 'language', o.language,
+      'mediaGroup', o.media_group, 'scope', o.scope, 'country', o.country, 'ownership', o.ownership)`;
+    const [summaryRows, meta, articles, timeline, edits, firsts] = await Promise.all([
       this.summaryRows('s.id = $1', [id], 'id', 1, 0),
       this.db.query<{ model: string; created_at: Date; analyzed_outlet_count: number; content: AnalysisContent }>(
         `SELECT sa.model, sa.created_at, s.analyzed_outlet_count, sa.content
@@ -93,7 +100,8 @@ export class StoriesService {
         `SELECT jsonb_build_object(
                   'title', a.title, 'url', a.url, 'language', a.language, 'publishedAt', a.published_at,
                   'outlet', jsonb_build_object('slug', o.slug, 'name', o.name, 'language', o.language,
-                                               'mediaGroup', o.media_group, 'scope', o.scope)) AS item
+                                               'mediaGroup', o.media_group, 'scope', o.scope,
+                                               'country', o.country, 'ownership', o.ownership)) AS item
          FROM articles a JOIN outlets o ON o.id = a.outlet_id
          WHERE a.story_id = $1 ORDER BY a.published_at DESC LIMIT 200`,
         [id],
@@ -103,6 +111,21 @@ export class StoriesService {
                 count(*) FILTER (WHERE language = 'en') AS en,
                 count(*) FILTER (WHERE language = 'hi') AS hi
          FROM articles WHERE story_id = $1 GROUP BY 1 ORDER BY 1`,
+        [id],
+      ),
+      this.db.query<{ item: StoryDetail['headlineEdits'][number] }>(
+        `SELECT jsonb_build_object('outlet', ${outletJson}, 'url', a.url, 'oldTitle', he.old_title,
+                                   'newTitle', he.new_title, 'seenAt', he.seen_at) AS item
+         FROM headline_edits he JOIN articles a ON a.id = he.article_id JOIN outlets o ON o.id = a.outlet_id
+         WHERE a.story_id = $1 ORDER BY he.seen_at DESC LIMIT 50`,
+        [id],
+      ),
+      this.db.query<{ item: StoryDetail['firstReports'][number] }>(
+        `SELECT jsonb_build_object('language', x.language, 'outlet', x.outlet, 'publishedAt', x.published_at) AS item
+         FROM (SELECT DISTINCT ON (a.language) a.language, a.published_at, ${outletJson} AS outlet
+               FROM articles a JOIN outlets o ON o.id = a.outlet_id
+               WHERE a.story_id = $1 ORDER BY a.language, a.published_at) x
+         ORDER BY x.published_at`,
         [id],
       ),
     ]);
@@ -121,12 +144,16 @@ export class StoriesService {
             differences: analysisRow.content.differences ?? [],
             framing: mapFraming(analysisRow.content, summary.outlets),
             debate: mapDebate(analysisRow.content, summary.outlets),
+            claims: mapClaims(analysisRow.content, summary.outlets),
+            stances: mapStances(analysisRow.content, summary.outlets),
             model: analysisRow.model,
             analyzedAt: analysisRow.created_at.toISOString(),
             outletCountAtAnalysis: analysisRow.analyzed_outlet_count,
           }
         : null,
       articles: articles.map((r) => r.item),
+      headlineEdits: edits.map((r) => r.item),
+      firstReports: firsts.map((r) => r.item),
       timeline: timeline.map<TimelinePoint>((t) => ({ hour: t.hour.toISOString(), en: t.en, hi: t.hi })),
     };
   }
@@ -187,7 +214,14 @@ export class StoriesService {
                           'for', count(*) FILTER (WHERE v.side = 'for'),
                           'against', count(*) FILTER (WHERE v.side = 'against'),
                           'unsure', count(*) FILTER (WHERE v.side = 'unsure'))
-                   FROM story_votes v WHERE v.story_id = s.id) AS votes
+                   FROM story_votes v WHERE v.story_id = s.id) AS votes,
+                s.category,
+                (SELECT jsonb_build_object('url', a.image_url, 'outlet', o.name, 'articleUrl', a.url)
+                   FROM articles a JOIN outlets o ON o.id = a.outlet_id
+                   WHERE a.story_id = s.id AND a.image_url IS NOT NULL
+                   ORDER BY a.published_at DESC LIMIT 1) AS image,
+                EXISTS (SELECT 1 FROM headline_edits he JOIN articles a ON a.id = he.article_id
+                        WHERE a.story_id = s.id) AS headline_edited
          FROM stories s LEFT JOIN story_analyses sa ON sa.story_id = s.id
          WHERE ${where}
          ORDER BY ${order}

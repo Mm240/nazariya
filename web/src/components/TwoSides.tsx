@@ -1,6 +1,7 @@
 import { pick, useI18n } from '../i18n';
 import { Argument, Bilingual } from '../types';
 import { SidePoll } from './SidePoll';
+import { OutletChip } from './ClaimsBoard';
 
 function Side({ kind, points }: { kind: 'for' | 'against'; points: Argument[] }) {
   const { t, lang } = useI18n();
@@ -22,9 +23,7 @@ function Side({ kind, points }: { kind: 'for' | 'against'; points: Argument[] })
               <p lang={lang}>{pick(p.text, lang)}</p>
               <p className="argument__sources">
                 {p.outlets.map((o) => (
-                  <span key={o.slug} className={`chip chip--${o.language}`}>
-                    {o.name}
-                  </span>
+                  <OutletChip key={o.slug} outlet={o} />
                 ))}
               </p>
             </li>

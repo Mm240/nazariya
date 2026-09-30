@@ -1,5 +1,6 @@
 import {
   AnalysisContent,
+  Claim,
   Debate,
   HeadlineRef,
   Lang,
@@ -22,6 +23,9 @@ export interface SummaryRow {
   section: 'india' | 'world';
   comment_count: number;
   votes: VoteCounts;
+  image: { url: string; outlet: string; articleUrl: string } | null;
+  category: string;
+  headline_edited: boolean;
 }
 
 const LANGS: Lang[] = ['en', 'hi'];
@@ -50,9 +54,11 @@ export function pickSampleHeadlines(headlines: HeadlineRef[], max = 4): Headline
 export function outletsOf(headlines: HeadlineRef[]): OutletRef[] {
   const seen = new Map<string, OutletRef>();
   for (const h of headlines) if (!seen.has(h.outlet.slug)) seen.set(h.outlet.slug, h.outlet);
-  // English outlets first, then Hindi; alphabetical within each. Stable for the UI's coverage bar.
+  // English, then Hindi, then other languages; alphabetical within each. Stable for the coverage bar.
+  const rank = (l: string) => (l === 'en' ? 0 : l === 'hi' ? 1 : 2);
   return [...seen.values()].sort(
-    (a, b) => a.language.localeCompare(b.language) || a.name.localeCompare(b.name),
+    (a, b) =>
+      rank(a.language) - rank(b.language) || a.language.localeCompare(b.language) || a.name.localeCompare(b.name),
   );
 }
 
@@ -70,6 +76,7 @@ export function toSummary(row: SummaryRow): StorySummary {
     coverage: {
       en: outlets.filter((o) => o.language === 'en').length,
       hi: outlets.filter((o) => o.language === 'hi').length,
+      other: outlets.filter((o) => o.language !== 'en' && o.language !== 'hi').length,
     },
     articleCount: row.article_count,
     outletCount: row.outlet_count,
@@ -88,7 +95,16 @@ export function toSummary(row: SummaryRow): StorySummary {
     section: row.section ?? 'india',
     commentCount: row.comment_count ?? 0,
     votes: row.votes ?? { for: 0, against: 0, unsure: 0 },
+    image: row.image ?? null,
+    category: pickCategory(analysis?.category, row.category),
+    headlineEdited: Boolean(row.headline_edited),
   };
+}
+
+/** The AI's category when it has one, else the topic of the feeds the articles came from. */
+export function pickCategory(fromAnalysis: string | undefined, fromFeeds: string | undefined): string | null {
+  if (fromAnalysis && fromAnalysis !== 'other') return fromAnalysis;
+  return fromFeeds && fromFeeds !== 'general' ? fromFeeds : null;
 }
 
 /** Resolve outlet slugs on each argument; drop arguments whose outlets have all left the story. */
@@ -110,5 +126,22 @@ export function mapFraming(content: AnalysisContent, outlets: OutletRef[]): Outl
   return (content.outlet_framing ?? []).flatMap((f) => {
     const outlet = bySlug.get(f.outlet);
     return outlet ? [{ outlet, text: { en: f.en, hi: f.hi } }] : [];
+  });
+}
+
+/** Resolve outlet slugs on each claim; drop claims no remaining outlet carries. */
+export function mapClaims(content: AnalysisContent, outlets: OutletRef[]): Claim[] {
+  const bySlug = new Map(outlets.map((o) => [o.slug, o]));
+  return (content.claims ?? []).flatMap((c) => {
+    const refs = c.outlets.flatMap((slug) => bySlug.get(slug) ?? []);
+    return refs.length ? [{ claim: c.claim, claimedBy: c.claimed_by, outlets: refs, status: c.status }] : [];
+  });
+}
+
+export function mapStances(content: AnalysisContent, outlets: OutletRef[]) {
+  const bySlug = new Map(outlets.map((o) => [o.slug, o]));
+  return (content.stances ?? []).flatMap((s) => {
+    const outlet = bySlug.get(s.outlet);
+    return outlet ? [{ outlet, stance: s.stance, reason: s.reason }] : [];
   });
 }

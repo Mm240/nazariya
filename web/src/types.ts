@@ -1,23 +1,30 @@
 // Mirrors api/src/stories/story.types.ts and api/src/meta/meta.service.ts.
+/** Interface languages. */
 export type Lang = 'en' | 'hi';
+/** Any article language code: 'en', 'hi', 'ar', 'fa', 'ur', 'fr'… */
+export type ContentLang = string;
 
 export interface Bilingual {
   en: string;
   hi: string;
 }
 
+export type Ownership = 'private' | 'public' | 'state';
+
 export interface OutletRef {
   slug: string;
   name: string;
-  language: Lang;
+  language: ContentLang;
   mediaGroup: string | null;
   scope?: 'indian' | 'international';
+  country?: string;
+  ownership?: Ownership;
 }
 
 export interface HeadlineRef {
   title: string;
   url: string;
-  language: Lang;
+  language: ContentLang;
   publishedAt: string;
   outlet: OutletRef;
 }
@@ -29,10 +36,10 @@ export interface StorySummary {
   leadHeadline: HeadlineRef | null;
   sampleHeadlines: HeadlineRef[];
   outlets: OutletRef[];
-  coverage: Record<Lang, number>;
+  coverage: { en: number; hi: number; other: number };
   articleCount: number;
   outletCount: number;
-  languages: Lang[];
+  languages: ContentLang[];
   firstSeenAt: string;
   lastArticleAt: string;
   analyzed: boolean;
@@ -41,6 +48,9 @@ export interface StorySummary {
   section: 'india' | 'world';
   commentCount: number;
   votes: VoteCounts;
+  image: { url: string; outlet: string; articleUrl: string } | null;
+  category: string | null;
+  headlineEdited: boolean;
 }
 
 export interface VoteCounts {
@@ -65,6 +75,13 @@ export interface CommentView {
   reportedByMe: boolean;
 }
 
+export interface Claim {
+  claim: Bilingual;
+  claimedBy: Bilingual;
+  outlets: OutletRef[];
+  status: 'confirmed' | 'one_sided' | 'disputed';
+}
+
 export interface Argument {
   text: Bilingual;
   outlets: OutletRef[];
@@ -79,12 +96,16 @@ export interface StoryDetail extends StorySummary {
     differences: Bilingual[];
     framing: { outlet: OutletRef; text: Bilingual }[];
     debate: { question: Bilingual; for: Argument[]; against: Argument[] } | null;
+    claims: Claim[];
+    stances: { outlet: OutletRef; stance: 'for' | 'against' | 'neutral'; reason: Bilingual }[];
     model: string;
     analyzedAt: string;
     outletCountAtAnalysis: number;
   } | null;
   articles: HeadlineRef[];
   timeline: { hour: string; en: number; hi: number }[];
+  headlineEdits: { outlet: OutletRef; url: string; oldTitle: string; newTitle: string; seenAt: string }[];
+  firstReports: { language: string; outlet: OutletRef; publishedAt: string }[];
 }
 
 export interface StoryList {
@@ -107,16 +128,19 @@ export interface Blindspots {
 export interface OutletActivity {
   slug: string;
   name: string;
-  language: Lang;
+  language: ContentLang;
   homepage: string | null;
   mediaGroup: string | null;
   scope: 'indian' | 'international';
+  country: string;
+  ownership: Ownership;
   articles24h: number;
   lastArticleAt: string | null;
 }
 
 export interface Stats {
-  outlets: { total: number; en: number; hi: number };
+  outlets: { total: number; en: number; hi: number; other: number; countries: number; languages: number };
+  headlineEdits24h: number;
   articles24h: number;
   activeStories: number;
   crossLanguageStories: number;

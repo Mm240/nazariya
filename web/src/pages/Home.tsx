@@ -5,13 +5,25 @@ import { HeadlineList } from '../components/Headlines';
 import { Loadable } from '../components/States';
 import { LiveUpdates } from '../components/LiveUpdates';
 import { VoteBar } from '../components/SidePoll';
-import { DebateLine, StoryList, StoryMeta } from '../components/StoryRow';
+import { DebateLine, StoryBadges, StoryList, StoryMeta } from '../components/StoryRow';
+import { StoryImage } from '../components/StoryImage';
 import { invalidateCache } from '../api';
 import { useApi, useDocumentTitle } from '../hooks';
 import { pick, storyTitle, useI18n } from '../i18n';
 import { Blindspots, Stats, StoryList as StoryListData, StorySummary } from '../types';
 
 const PAGE = 12;
+
+const TOPICS = [
+  'all', 'india', 'world', 'politics', 'business', 'sports', 'entertainment', 'technology', 'science', 'health',
+] as const;
+type Topic = (typeof TOPICS)[number];
+
+/** India / World are geographic sections; the rest are topics. */
+function topicQuery(topic: Topic): string {
+  if (topic === 'all') return '';
+  return topic === 'india' || topic === 'world' ? `&section=${topic}` : `&category=${topic}`;
+}
 const MAX = 48; // the API returns at most 50 per request
 
 function Intro() {
@@ -20,7 +32,7 @@ function Intro() {
   const s = stats.data;
   return (
     <section className="intro">
-      <p className="intro__text">{s ? t.intro(s.outlets.total, s.outlets.en, s.outlets.hi) : t.introFallback}</p>
+      <p className="intro__text">{s ? t.intro(s.outlets.total, s.outlets.en, s.outlets.hi, s.outlets.countries) : t.introFallback}</p>
       {s?.lastRun && (
         <p className="intro__meta">
           <span className="live-pill">
@@ -42,9 +54,11 @@ function Hero({ story }: { story: StorySummary }) {
     <section className="hero" aria-labelledby="hero-title">
       <p className="hero__kicker">{t.mostCovered}</p>
       <CoverageBar outlets={story.outlets} size="lg" animate />
+      <StoryImage image={story.image} size="hero" />
       <div className="hero__grid">
         <div className="hero__main">
-          <h2 id="hero-title" className="hero__title" lang={title.lang}>
+          <StoryBadges story={story} />
+          <h2 id="hero-title" className="hero__title" lang={title.lang} dir="auto">
             <Link to={`/story/${story.id}`}>{title.text}</Link>
           </h2>
           {story.headline && (
@@ -143,11 +157,11 @@ function BlindspotPreview() {
 export default function Home() {
   const { t } = useI18n();
   const [filter, setFilter] = useState<'all' | 'both-languages'>('all');
-  const [section, setSection] = useState<'all' | 'india' | 'world'>('all');
+  const [topic, setTopic] = useState<Topic>('all');
   const [limit, setLimit] = useState(PAGE);
   // Bumped when new stories arrive; the extra query parameter also skips the API's 60-second cache.
   const [version, setVersion] = useState(0);
-  const state = useApi<StoryListData>(`/stories?limit=${limit}&filter=${filter}&section=${section}${version ? `&v=${version}` : ''}`, true);
+  const state = useApi<StoryListData>(`/stories?limit=${limit}&filter=${filter}${topicQuery(topic)}${version ? `&v=${version}` : ''}`, true);
   useDocumentTitle(undefined);
 
   function choose(next: typeof filter) {
@@ -155,8 +169,8 @@ export default function Home() {
     setLimit(PAGE);
   }
 
-  function chooseSection(next: typeof section) {
-    setSection(next);
+  function chooseTopic(next: Topic) {
+    setTopic(next);
     setLimit(PAGE);
   }
 
@@ -171,10 +185,10 @@ export default function Home() {
       <Intro key={version} />
       <Loadable state={state} rows={5}>
         {(data) => {
-          if (data.items.length === 0 && filter === 'all' && section === 'all')
+          if (data.items.length === 0 && filter === 'all' && topic === 'all')
             return <p className="empty-line">{t.emptyHome}</p>;
           const [lead, ...rest] = data.items;
-          const showHero = filter === 'all' && section === 'all' && lead;
+          const showHero = filter === 'all' && topic === 'all' && lead;
           const list = showHero ? rest : data.items;
           return (
             <>
@@ -183,10 +197,10 @@ export default function Home() {
               <div className="home-grid">
                 <section aria-label={t.nav.top}>
                   <div className="filters">
-                    <div className="tabs" role="group">
-                      {(['all', 'india', 'world'] as const).map((k) => (
-                        <button key={k} type="button" aria-pressed={section === k} onClick={() => chooseSection(k)}>
-                          {k === 'all' ? t.sectionAll : k === 'india' ? t.sectionIndia : t.sectionWorld}
+                    <div className="tabs tabs--topics" role="group">
+                      {TOPICS.map((k) => (
+                        <button key={k} type="button" aria-pressed={topic === k} onClick={() => chooseTopic(k)}>
+                          {t.topics[k]}
                         </button>
                       ))}
                     </div>

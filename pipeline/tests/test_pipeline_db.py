@@ -59,7 +59,7 @@ def conn():
     with connection.cursor() as cur:
         cur.execute("SET lock_timeout = '10s'")  # fail fast instead of hanging on a stray lock
         cur.execute(
-            "DROP TABLE IF EXISTS comment_actions, comments, story_votes, story_feedback, pipeline_runs, story_redirects, "
+            "DROP TABLE IF EXISTS headline_edits, comment_actions, comments, story_votes, story_feedback, pipeline_runs, story_redirects, "
             "story_analyses, articles, stories, outlets CASCADE"
         )
     connection.commit()
@@ -386,3 +386,36 @@ def test_stories_flagged_in_earlier_runs_are_split_without_calling_the_ai(conn, 
     stats = run_module.run(settings, analysis=False)
     assert stats.get("stories_split") == 1
     assert db.flagged_mixed_stories(conn) == []
+
+
+def test_changed_headlines_are_recorded_as_edits(conn, settings, fake_fetch):
+    run_module.run(settings, analysis=False)
+    title, url, age = FEED_ITEMS["alpha"][0]
+    FEED_ITEMS["alpha"][0] = ("UPDATED: " + title + " amid protests", url, age)
+    try:
+        run_module.run(settings, analysis=False)
+        run_module.run(settings, analysis=False)  # seeing the same new title again is not another edit
+    finally:
+        FEED_ITEMS["alpha"][0] = (title, url, age)
+    with conn.cursor() as cur:
+        cur.execute("SELECT old_title, new_title FROM headline_edits")
+        edits = cur.fetchall()
+        cur.execute("SELECT title FROM articles WHERE url = %s", (url,))
+        current = cur.fetchone()["title"]
+    assert len(edits) == 1 and edits[0]["old_title"] == title
+    assert current.startswith("UPDATED:")
+
+
+def test_feed_category_flows_to_articles_and_stories(conn, settings, fake_fetch, tmp_path):
+    feeds_file = tmp_path / "sports.yaml"
+    feeds_file.write_text(
+        "feeds:\n"
+        "  - {slug: alpha, name: Alpha News, language: en, url: 'https://alpha.example/rss', category: sports}\n"
+        "  - {slug: beta, name: Beta Times, language: en, url: 'https://beta.example/rss', category: sports}\n"
+    )
+    run_module.run(replace(settings, feeds_path=feeds_file), analysis=False)
+    with conn.cursor() as cur:
+        cur.execute("SELECT DISTINCT category FROM articles")
+        assert [r["category"] for r in cur.fetchall()] == ["sports"]
+        cur.execute("SELECT count(*) AS n FROM stories WHERE category = 'sports'")
+        assert cur.fetchone()["n"] > 0

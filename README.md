@@ -10,12 +10,16 @@
 
 It never labels outlets as left, right or biased. It puts what each one published side by side and lets the reader compare.
 
-Link: https://nazariya-six.vercel.app/
-
 ## What it does
 
 - **Cross-language story clustering.** A Hindi headline and an English headline about the same event land in the same story, using a multilingual embedding model trained so that translations sit close together in vector space.
 - **Framing comparison.** Once three or more outlets cover a story, Claude writes, in both English and Hindi, a neutral headline, what everyone reports, where coverage differs, and one line on how each outlet framed it. Output is forced into a JSON schema and validated before it is stored.
+- **Who leans which way.** On any debated story (politics, sports, entertainment, business), outlets are sorted into *leans for*, *leans against* and *just reporting*, each with the reason taken from its own headline. Plain results ("India beat West Indies") get no sides.
+- **Headline edit tracker.** Every 15 minutes the pipeline re-reads each feed; when an outlet quietly rewrites a headline, both versions are kept and shown.
+- **Who reported first.** Each story shows the first outlet to publish, and how much later the first outlet in each other language followed.
+- **Topics and photos.** Politics, business, sports, entertainment, tech, science and health each have their own tab, fed by the outlets' own section feeds, and stories show the photo the outlet published with its article (credited and linked).
+- **Who claims what.** For contested events (who attacked first, casualty figures), a claims board lists each claim, who makes it, which outlets carry it, and a sourcing status: confirmed by independent outlets from different countries, one side's claim, or disputed. It never rules on who is right, and a state outlet repeating its own government's claim doesn't count as confirmation.
+- **Global sources, every side.** 86 feeds from 55 outlets in 19 languages, including US, Iranian, Israeli, Russian, Chinese, Pakistani, Gulf and European outlets. Every outlet is tagged with its country and ownership (private, public broadcaster, or state), applied the same way everywhere.
 - **Two sides.** When a story is a real dispute, the AI states the question neutrally and lists the arguments for and against, but only arguments the outlets actually carried, each credited to its sources. Unattributed arguments are dropped in validation, nothing is invented to balance the sides, and when coverage presents only one side the page says so.
 - **Live updates.** The pipeline runs every 15 minutes; an open page checks once a minute and offers the new stories without reloading under the reader.
 - **Readers take part.** A "Where do you stand?" poll under every debate (one changeable vote per reader), a discussion thread with upvotes, and a "Something wrong on this page?" form whose reports double as labelled data for improving clustering and summaries.

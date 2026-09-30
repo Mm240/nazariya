@@ -1,5 +1,6 @@
 import { CSSProperties } from 'react';
 import { useI18n } from '../i18n';
+import { langGroup } from '../lang';
 import { OutletRef } from '../types';
 
 interface Props {
@@ -17,20 +18,21 @@ interface Props {
 export function CoverageBar({ outlets, size = 'sm', animate = false }: Props) {
   const { t } = useI18n();
   const en = outlets.filter((o) => o.language === 'en').length;
-  const hi = outlets.length - en;
+  const hi = outlets.filter((o) => o.language === 'hi').length;
+  const other = outlets.length - en - hi;
   return (
     <div
       className={`bar bar--${size}${animate ? ' bar--draw' : ''}`}
       style={{ '--n': outlets.length } as CSSProperties}
       role="img"
-      aria-label={t.coverageLabel(en, hi)}
+      aria-label={t.coverageLabel(en, hi, other)}
     >
       {outlets.map((o, i) => (
         <span
           key={o.slug}
-          className={`bar__seg bar__seg--${o.language}`}
+          className={`bar__seg bar__seg--${langGroup(o.language)}`}
           style={{ '--i': i } as CSSProperties}
-          title={o.name}
+          title={`${o.name} (${o.language})`}
         />
       ))}
     </div>

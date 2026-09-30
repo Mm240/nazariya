@@ -14,9 +14,10 @@ log = logging.getLogger(__name__)
 
 TOOL_NAME = "record_story_analysis"
 
-SYSTEM_PROMPT = """You compare how different Indian news outlets covered the same event. \
-You receive headlines and short excerpts, in English and/or Hindi, that an automatic \
-system grouped together because they seem to describe one event.
+SYSTEM_PROMPT = """You compare how different news outlets covered the same event. \
+You receive headlines and short excerpts, in any language, that an automatic system \
+grouped together because they seem to describe one event. Each article says which \
+country its outlet is based in and who owns it (private, public broadcaster, or state).
 
 Rules:
 1. Use only the text provided. Do not add facts, background or context from your own \
@@ -40,11 +41,34 @@ the provided coverage, including arguments the outlets attribute to people or gr
 point must be supported by the listed outlets' text; list their slugs. Never invent or \
 strengthen an argument to balance the sides: if a side has no argument in the coverage, \
 leave it empty. If the event is simply factual (an accident, a result, the weather), set \
-debate.contested to false and leave the rest empty.
-7. Write every text field twice: natural English in "en" and natural, standard Hindi \
+debate.contested to false and leave the rest empty. Look for disputes in every kind of \
+story, not only politics: a team selection or umpiring decision people argue over, a \
+film's reception or a celebrity controversy, a company decision, a court ruling. A match \
+result, an award list or a release date has no debate.
+7. Claims. List the main factual claims in the coverage (at most 6), especially where \
+parties give competing accounts (e.g. who attacked first, casualty numbers). For each, \
+say who makes it ("Iranian government", "US military", "witnesses", "police") and which \
+outlets carry it, then choose a status from the sourcing alone, never from your own view \
+of what is true:
+   - "confirmed": reported as fact, not as someone's claim, by outlets based in at least \
+two different countries (or two unrelated owners for a domestic story), with no outlet \
+contradicting it.
+   - "one_sided": asserted by one party and carried only as that party's claim, or only by \
+outlets from that party's country or side.
+   - "disputed": outlets give incompatible versions (different numbers, opposite accounts).
+   State-owned media repeating its own government's claim does not make that claim confirmed.
+   Never decide which side is right.
+8. Stances, only when debate.contested is true. For each outlet, classify its own \
+headline and excerpt against debate.question as "for" (leans yes), "against" (leans no) \
+or "neutral" (just reports, or gives both sides), with a short reason pointing to its own \
+wording. Judge only the text given; it is fine for every outlet to be neutral. With no \
+debate, leave stances empty: a match result or a release date has no sides.
+9. Category: one of politics, world, business, sports, entertainment, technology, \
+science, health, crime, other.
+10. Write every text field twice: natural English in "en" and natural, standard Hindi \
 in Devanagari in "hi" (idiomatic, not word-for-word, never transliterated). Keep names, \
 places and numbers consistent between the two.
-8. Be brief. Headlines under 14 words. Summary 2-3 sentences. Each list item one sentence."""
+11. Be brief. Headlines under 14 words. Summary 2-3 sentences. Each list item one sentence."""
 
 
 def _bilingual(description: str) -> dict:
@@ -114,9 +138,44 @@ ANALYSIS_TOOL = {
                     "required": ["outlet", "en", "hi"],
                 },
             },
+            "category": {
+                "type": "string",
+                "enum": ["politics", "world", "business", "sports", "entertainment", "technology",
+                         "science", "health", "crime", "other"],
+                "description": "The story's main topic.",
+            },
             "facts_disputed": {
                 "type": "boolean",
                 "description": "True only if outlets report incompatible facts.",
+            },
+            "stances": {
+                "type": "array",
+                "description": "Only with a debate: does each outlet's coverage lean yes, no, or just report?",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "outlet": {"type": "string"},
+                        "stance": {"type": "string", "enum": ["for", "against", "neutral"]},
+                        "reason": _bilingual("Short reason pointing to the outlet's own wording."),
+                    },
+                    "required": ["outlet", "stance", "reason"],
+                },
+            },
+            "claims": {
+                "type": "array",
+                "maxItems": 6,
+                "description": "Main factual claims, who makes them, who carries them, and how well sourced.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "claim": _bilingual("The claim, stated neutrally in one sentence."),
+                        "claimed_by": _bilingual("Who asserts it, e.g. 'Iranian government', 'witnesses'."),
+                        "outlets": {"type": "array", "items": {"type": "string"},
+                                    "description": "Slugs of outlets that carry this claim."},
+                        "status": {"type": "string", "enum": ["confirmed", "one_sided", "disputed"]},
+                    },
+                    "required": ["claim", "claimed_by", "outlets", "status"],
+                },
             },
             "debate": {
                 "type": "object",
@@ -138,6 +197,9 @@ ANALYSIS_TOOL = {
             "differences",
             "outlet_framing",
             "facts_disputed",
+            "category",
+            "stances",
+            "claims",
             "debate",
         ],
     },
@@ -149,6 +211,7 @@ def build_user_message(articles: list[dict]) -> str:
     for a in articles:
         parts.append(
             f'<article outlet="{a["outlet_slug"]}" outlet_name="{html.escape(a["outlet_name"])}" '
+            f'country="{a.get("outlet_country", "IN")}" ownership="{a.get("outlet_ownership", "private")}" '
             f'language="{a["language"]}" published="{a["published_at"]:%Y-%m-%dT%H:%MZ}">'
         )
         parts.append(f"<headline>{html.escape(a['title'])}</headline>")
@@ -164,6 +227,10 @@ def _text_pair(value: object, field: str) -> dict:
     if not isinstance(value, dict) or not all(isinstance(value.get(k), str) and value[k].strip() for k in ("en", "hi")):
         raise ValueError(f"{field} must have non-empty 'en' and 'hi' strings")
     return {"en": value["en"].strip(), "hi": value["hi"].strip()}
+
+
+CATEGORY_VALUES = ("politics", "world", "business", "sports", "entertainment", "technology",
+                   "science", "health", "crime", "other")
 
 
 def _flag(value: object, key: str, default: bool) -> bool:
@@ -195,8 +262,12 @@ def validate_analysis(data: dict, allowed_slugs: set[str]) -> dict:
         if isinstance(item, dict) and item.get("outlet") in allowed_slugs:
             pair = _text_pair(item, "outlet_framing")
             framing.append({"outlet": item["outlet"], **pair})
+    debate = _validate_debate(data.get("debate"), allowed_slugs)
     return {
-        "debate": _validate_debate(data.get("debate"), allowed_slugs),
+        # Who leans which way is only meaningful when there is something to disagree about.
+        "stances": _validate_stances(data.get("stances"), allowed_slugs) if debate else [],
+        "claims": _validate_claims(data.get("claims"), allowed_slugs),
+        "debate": debate,
         "same_event": data["same_event"],
         "facts_disputed": data["facts_disputed"],
         "neutral_headline": _text_pair(data.get("neutral_headline"), "neutral_headline"),
@@ -204,7 +275,43 @@ def validate_analysis(data: dict, allowed_slugs: set[str]) -> dict:
         "common_ground": lists["common_ground"],
         "differences": lists["differences"],
         "outlet_framing": framing,
+        "category": data.get("category") if data.get("category") in CATEGORY_VALUES else "other",
     }
+
+
+def _validate_stances(value: object, allowed_slugs: set[str]) -> list[dict]:
+    """One stance per outlet actually in the story."""
+    stances, seen = [], set()
+    for item in value if isinstance(value, list) else []:
+        if not isinstance(item, dict) or item.get("stance") not in ("for", "against", "neutral"):
+            continue
+        slug = item.get("outlet")
+        if slug not in allowed_slugs or slug in seen:
+            continue
+        try:
+            reason = _text_pair(item.get("reason"), "stances.reason")
+        except ValueError:
+            continue
+        seen.add(slug)
+        stances.append({"outlet": slug, "stance": item["stance"], "reason": reason})
+    return stances
+
+
+def _validate_claims(value: object, allowed_slugs: set[str]) -> list[dict]:
+    """Keep well-formed claims carried by outlets that are really in the story."""
+    claims = []
+    for item in (value if isinstance(value, list) else [])[:6]:
+        if not isinstance(item, dict) or item.get("status") not in ("confirmed", "one_sided", "disputed"):
+            continue
+        outlets = list(dict.fromkeys(o for o in item.get("outlets") or [] if o in allowed_slugs))
+        try:
+            claim = _text_pair(item.get("claim"), "claims.claim")
+            by = _text_pair(item.get("claimed_by"), "claims.claimed_by")
+        except ValueError:
+            continue
+        if outlets:
+            claims.append({"claim": claim, "claimed_by": by, "outlets": outlets, "status": item["status"]})
+    return claims
 
 
 def _validate_debate(value: object, allowed_slugs: set[str]) -> dict | None:
@@ -261,7 +368,7 @@ class Analyzer:
     def analyze(self, articles: list[dict]) -> AnalysisResult:
         response = self._client.messages.create(
             model=self.model,
-            max_tokens=4000,
+            max_tokens=6000,
             system=SYSTEM_PROMPT,
             tools=[ANALYSIS_TOOL],
             tool_choice={"type": "tool", "name": TOOL_NAME},

@@ -47,3 +47,5 @@ jobs:
           # Optional overrides live in repository variables (Settings > Secrets and variables > Actions).
           ANALYSIS_MODEL: ${{ vars.ANALYSIS_MODEL || 'claude-haiku-4-5-20251001' }}
           DAILY_ANALYSIS_LIMIT: ${{ vars.DAILY_ANALYSIS_LIMIT || '30' }}
+          # With ~90 feeds, keep a week of articles so the free 0.5 GB database never fills up.
+          RETENTION_DAYS: ${{ vars.RETENTION_DAYS || '7' }}

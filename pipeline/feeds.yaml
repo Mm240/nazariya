@@ -148,13 +148,15 @@ feeds:
     url: https://hindi.oneindia.com/rss/hindi-news-fb.xml
     homepage: https://hindi.oneindia.com
 
-  - slug: bbc-hindi     
+  - slug: bbc-hindi
+    country: GB
+    ownership: public
     name: BBC Hindi
     language: hi
     url: https://feeds.bbci.co.uk/hindi/rss.xml
     homepage: https://www.bbc.com/hindi
 
-  - slug: dainik-jagran 
+  - slug: dainik-jagran
     name: Dainik Jagran
     language: hi
     url: http://rss.jagran.com/rss/news/national.xml
@@ -201,7 +203,7 @@ feeds:
     language: en
     url: https://timesofindia.indiatimes.com/rssfeeds/296589292.cms
 
-  - slug: ndtv-world     
+  - slug: ndtv-world
     outlet: ndtv
     section: world
     name: NDTV
@@ -228,6 +230,8 @@ feeds:
   # shows how Indian outlets framed it next to how the wider world did.
 
   - slug: bbc-world
+    country: GB
+    ownership: public
     name: BBC News
     language: en
     scope: international
@@ -236,6 +240,8 @@ feeds:
     homepage: https://www.bbc.com/news/world
 
   - slug: al-jazeera
+    country: QA
+    ownership: state
     name: Al Jazeera
     language: en
     scope: international
@@ -244,12 +250,591 @@ feeds:
     homepage: https://www.aljazeera.com
 
   - slug: the-guardian-world
+    country: GB
+    ownership: private
     name: The Guardian
     language: en
     scope: international
     section: world
     url: https://www.theguardian.com/world/rss
     homepage: https://www.theguardian.com/world
+
+  # ---------- Global sources: every side of international stories ----------
+  # country: where the outlet is based. ownership: private, public (public
+  # broadcaster with an editorial-independence charter) or state (run or funded
+  # by a government). The same rule is applied to every country.
+  # All marked "verify": run `python -m nazariya.check_feeds` and set
+  # `enabled: false` on any that fail.
+
+  - slug: npr-world            # verify
+    name: NPR
+    language: en
+    country: US
+    ownership: public
+    scope: international
+    section: world
+    url: https://feeds.npr.org/1004/rss.xml
+    homepage: https://www.npr.org
+
+  - slug: nyt-world            # verify
+    name: The New York Times
+    language: en
+    country: US
+    ownership: private
+    scope: international
+    section: world
+    url: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+    homepage: https://www.nytimes.com
+
+  - slug: fox-world            # verify
+    name: Fox News
+    language: en
+    country: US
+    ownership: private
+    scope: international
+    section: world
+    url: https://moxie.foxnews.com/google-publisher/world.xml
+    homepage: https://www.foxnews.com
+
+  - slug: press-tv             # verify
+    name: Press TV
+    language: en
+    country: IR
+    ownership: state
+    scope: international
+    section: world
+    url: https://www.presstv.ir/rss.xml
+    homepage: https://www.presstv.ir
+
+  - slug: tehran-times         # verify
+    name: Tehran Times
+    language: en
+    country: IR
+    ownership: state
+    scope: international
+    section: world
+    url: https://www.tehrantimes.com/rss
+    homepage: https://www.tehrantimes.com
+
+  - slug: times-of-israel      # verify
+    name: The Times of Israel
+    language: en
+    country: IL
+    ownership: private
+    scope: international
+    section: world
+    url: https://www.timesofisrael.com/feed/
+    homepage: https://www.timesofisrael.com
+
+  - slug: tass                 # verify
+    name: TASS
+    language: en
+    country: RU
+    ownership: state
+    scope: international
+    section: world
+    url: https://tass.com/rss/v2.xml
+    homepage: https://tass.com
+
+  - slug: cgtn                 # verify
+    name: CGTN
+    language: en
+    country: CN
+    ownership: state
+    scope: international
+    section: world
+    url: https://www.cgtn.com/subscribe/rss/section/world.xml
+    homepage: https://www.cgtn.com
+
+  - slug: dawn                 # verify
+    name: Dawn
+    language: en
+    country: PK
+    ownership: private
+    scope: international
+    section: world
+    url: https://www.dawn.com/feeds/home
+    homepage: https://www.dawn.com
+
+  - slug: dw-world             # verify
+    name: DW
+    language: en
+    country: DE
+    ownership: public
+    scope: international
+    section: world
+    url: https://rss.dw.com/rdf/rss-en-world
+    homepage: https://www.dw.com
+
+  - slug: france24             # verify
+    name: France 24
+    language: en
+    country: FR
+    ownership: public
+    scope: international
+    section: world
+    url: https://www.france24.com/en/rss
+    homepage: https://www.france24.com
+
+  # Other languages: headlines are shown as published; summaries stay in English and Hindi.
+  - slug: bbc-persian          # verify
+    name: BBC Persian
+    language: fa
+    country: GB
+    ownership: public
+    scope: international
+    section: world
+    url: https://feeds.bbci.co.uk/persian/rss.xml
+    homepage: https://www.bbc.com/persian
+
+  - slug: bbc-arabic           # verify
+    name: BBC Arabic
+    language: ar
+    country: GB
+    ownership: public
+    scope: international
+    section: world
+    url: https://feeds.bbci.co.uk/arabic/rss.xml
+    homepage: https://www.bbc.com/arabic
+
+  - slug: bbc-urdu             # verify
+    name: BBC Urdu
+    language: ur
+    country: GB
+    ownership: public
+    scope: international
+    section: world
+    url: https://feeds.bbci.co.uk/urdu/rss.xml
+    homepage: https://www.bbc.com/urdu
+
+  - slug: france24-fr          # verify
+    name: France 24 (français)
+    language: fr
+    country: FR
+    ownership: public
+    scope: international
+    section: world
+    url: https://www.france24.com/fr/rss
+    homepage: https://www.france24.com/fr
+
+  # ---------- Topic sections: sports, entertainment, business, technology, science, health ----------
+  # `category` files these stories under their own heading on the site.
+
+  - slug: the-hindu-sport            # verify
+    outlet: the-hindu
+    name: The Hindu
+    language: en
+    category: sports
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.thehindu.com/sport/?service=rss
+
+  - slug: the-hindu-entertainment            # verify
+    outlet: the-hindu
+    name: The Hindu
+    language: en
+    category: entertainment
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.thehindu.com/entertainment/?service=rss
+
+  - slug: the-hindu-business            # verify
+    outlet: the-hindu
+    name: The Hindu
+    language: en
+    category: business
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.thehindu.com/business/?service=rss
+
+  - slug: the-hindu-scitech            # verify
+    outlet: the-hindu
+    name: The Hindu
+    language: en
+    category: technology
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.thehindu.com/sci-tech/?service=rss
+
+  - slug: indian-express-sports            # verify
+    outlet: indian-express
+    name: The Indian Express
+    language: en
+    category: sports
+    section: india
+    country: IN
+    ownership: private
+    url: https://indianexpress.com/section/sports/feed/
+
+  - slug: indian-express-entertainment            # verify
+    outlet: indian-express
+    name: The Indian Express
+    language: en
+    category: entertainment
+    section: india
+    country: IN
+    ownership: private
+    url: https://indianexpress.com/section/entertainment/feed/
+
+  - slug: indian-express-business            # verify
+    outlet: indian-express
+    name: The Indian Express
+    language: en
+    category: business
+    section: india
+    country: IN
+    ownership: private
+    url: https://indianexpress.com/section/business/feed/
+
+  - slug: indian-express-tech            # verify
+    outlet: indian-express
+    name: The Indian Express
+    language: en
+    category: technology
+    section: india
+    country: IN
+    ownership: private
+    url: https://indianexpress.com/section/technology/feed/
+
+  - slug: hindustan-times-sports            # verify
+    outlet: hindustan-times
+    name: Hindustan Times
+    language: en
+    category: sports
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.hindustantimes.com/feeds/rss/sports/rssfeed.xml
+
+  - slug: hindustan-times-entertainment            # verify
+    outlet: hindustan-times
+    name: Hindustan Times
+    language: en
+    category: entertainment
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.hindustantimes.com/feeds/rss/entertainment/rssfeed.xml
+
+  - slug: hindustan-times-business            # verify
+    outlet: hindustan-times
+    name: Hindustan Times
+    language: en
+    category: business
+    section: india
+    country: IN
+    ownership: private
+    url: https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml
+
+  - slug: times-of-india-sports            # verify
+    outlet: times-of-india
+    name: The Times of India
+    language: en
+    category: sports
+    section: india
+    country: IN
+    ownership: private
+    url: https://timesofindia.indiatimes.com/rssfeeds/4719148.cms
+
+  - slug: times-of-india-entertainment            # verify
+    outlet: times-of-india
+    name: The Times of India
+    language: en
+    category: entertainment
+    section: india
+    country: IN
+    ownership: private
+    url: https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms
+
+  - slug: times-of-india-business            # verify
+    outlet: times-of-india
+    name: The Times of India
+    language: en
+    category: business
+    section: india
+    country: IN
+    ownership: private
+    url: https://timesofindia.indiatimes.com/rssfeeds/1898055.cms
+
+  - slug: times-of-india-tech            # verify
+    outlet: times-of-india
+    name: The Times of India
+    language: en
+    category: technology
+    section: india
+    country: IN
+    ownership: private
+    url: https://timesofindia.indiatimes.com/rssfeeds/66949542.cms
+
+  - slug: news18-hindi-sports            # verify
+    outlet: news18-hindi
+    name: News18 Hindi
+    language: hi
+    category: sports
+    section: india
+    country: IN
+    ownership: private
+    url: https://hindi.news18.com/rss/khabar/sports/sports.xml
+
+  - slug: news18-hindi-entertainment            # verify
+    outlet: news18-hindi
+    name: News18 Hindi
+    language: hi
+    category: entertainment
+    section: india
+    country: IN
+    ownership: private
+    url: https://hindi.news18.com/rss/khabar/entertainment/entertainment.xml
+
+  - slug: bbc-sport            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: sports
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/sport/rss.xml
+
+  - slug: bbc-entertainment            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: entertainment
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml
+
+  - slug: bbc-business            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: business
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/news/business/rss.xml
+
+  - slug: bbc-technology            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: technology
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/news/technology/rss.xml
+
+  - slug: bbc-science            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: science
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/news/science_and_environment/rss.xml
+
+  - slug: bbc-health            # verify
+    outlet: bbc-world
+    name: BBC News
+    language: en
+    category: health
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/news/health/rss.xml
+
+  - slug: guardian-sport            # verify
+    outlet: the-guardian-world
+    name: The Guardian
+    language: en
+    category: sports
+    section: world
+    country: GB
+    ownership: private
+    scope: international
+    url: https://www.theguardian.com/sport/rss
+
+  - slug: guardian-film            # verify
+    outlet: the-guardian-world
+    name: The Guardian
+    language: en
+    category: entertainment
+    section: world
+    country: GB
+    ownership: private
+    scope: international
+    url: https://www.theguardian.com/film/rss
+
+
+  # ---------- More languages (headlines shown as published; summaries in English and Hindi) ----------
+
+  - slug: bbc-mundo            # verify
+    name: BBC Mundo
+    language: es
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/mundo/rss.xml
+    homepage: https://www.bbc.com/mundo
+
+  - slug: bbc-russian            # verify
+    name: BBC Russian
+    language: ru
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/russian/rss.xml
+    homepage: https://www.bbc.com/russian
+
+  - slug: bbc-chinese            # verify
+    name: BBC Chinese
+    language: zh
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/zhongwen/simp/rss.xml
+    homepage: https://www.bbc.com/zhongwen/simp
+
+  - slug: bbc-japanese            # verify
+    name: BBC Japanese
+    language: ja
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/japanese/rss.xml
+    homepage: https://www.bbc.com/japanese
+
+  - slug: bbc-turkce            # verify
+    name: BBC Türkçe
+    language: tr
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/turkce/rss.xml
+    homepage: https://www.bbc.com/turkce
+
+  - slug: bbc-brasil            # verify
+    name: BBC Brasil
+    language: pt
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/portuguese/rss.xml
+    homepage: https://www.bbc.com/portuguese
+
+  - slug: bbc-indonesia            # verify
+    name: BBC Indonesia
+    language: id
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/indonesia/rss.xml
+    homepage: https://www.bbc.com/indonesia
+
+  - slug: bbc-vietnamese            # verify
+    name: BBC Vietnamese
+    language: vi
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/vietnamese/rss.xml
+    homepage: https://www.bbc.com/vietnamese
+
+  - slug: bbc-korean            # verify
+    name: BBC Korean
+    language: ko
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/korean/rss.xml
+    homepage: https://www.bbc.com/korean
+
+  - slug: bbc-ukrainian            # verify
+    name: BBC Ukrainian
+    language: uk
+    category: general
+    section: world
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/ukrainian/rss.xml
+    homepage: https://www.bbc.com/ukrainian
+
+  - slug: bbc-marathi            # verify
+    name: BBC Marathi
+    language: mr
+    category: general
+    section: india
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/marathi/rss.xml
+    homepage: https://www.bbc.com/marathi
+
+  - slug: bbc-gujarati            # verify
+    name: BBC Gujarati
+    language: gu
+    category: general
+    section: india
+    country: GB
+    ownership: public
+    scope: international
+    url: https://feeds.bbci.co.uk/gujarati/rss.xml
+    homepage: https://www.bbc.com/gujarati
+
+  - slug: dw-german            # verify
+    name: DW (Deutsch)
+    language: de
+    category: general
+    section: world
+    country: DE
+    ownership: public
+    scope: international
+    url: https://rss.dw.com/rdf/rss-de-all
+    homepage: https://www.dw.com/de
+
+  - slug: le-monde            # verify
+    name: Le Monde
+    language: fr
+    category: general
+    section: world
+    country: FR
+    ownership: private
+    scope: international
+    url: https://www.lemonde.fr/international/rss_full.xml
+    homepage: https://www.lemonde.fr
+
 
 # Items whose URL contains any of these are skipped (galleries, videos, web stories).
 skip_url_patterns:

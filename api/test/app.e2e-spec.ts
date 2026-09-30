@@ -24,7 +24,7 @@ function vec(axis: number, tilt = 0): string {
 
 async function seed(client: Client): Promise<void> {
   await client.query(
-    'DROP TABLE IF EXISTS comment_actions, comments, story_votes, story_feedback, pipeline_runs, story_redirects, ' +
+    'DROP TABLE IF EXISTS headline_edits, comment_actions, comments, story_votes, story_feedback, pipeline_runs, story_redirects, ' +
       'story_analyses, articles, stories, outlets CASCADE',
   );
   await client.query(readFileSync(join(__dirname, '..', '..', 'db', 'schema.sql'), 'utf8'));
@@ -33,7 +33,8 @@ async function seed(client: Client): Promise<void> {
       (1, 'alpha', 'Alpha News', 'en', 'Alpha Group'), (2, 'beta', 'Beta Times', 'en', NULL),
       (3, 'gamma', 'Gamma Samachar', 'hi', 'Alpha Group'), (4, 'delta', 'Delta Khabar', 'hi', NULL),
       (5, 'epsilon', 'Epsilon Patrika', 'hi', NULL), (6, 'zeta', 'Zeta Old', 'en', NULL);
-    UPDATE outlets SET active = FALSE WHERE slug = 'zeta';`);
+    UPDATE outlets SET active = FALSE WHERE slug = 'zeta';
+    UPDATE outlets SET country = 'IR', ownership = 'state' WHERE slug = 'beta';`);
   // Story 10: cross-language, analysed. Story 11: Hindi-only blindspot. Story 12: close to 10.
   await client.query(
     `INSERT INTO stories (id, centroid, article_count, outlet_count, languages, first_seen_at, last_article_at)
@@ -66,6 +67,11 @@ async function seed(client: Client): Promise<void> {
           { outlet: 'beta', en: 'Leads with the walkout.', hi: 'वॉकआउट पर ज़ोर।' },
           { outlet: 'not-in-story', en: 'x', hi: 'y' },
         ],
+        claims: [
+          { claim: { en: 'The vote was 250-180.', hi: 'मतदान 250-180 रहा।' }, claimed_by: { en: 'Parliament', hi: 'संसद' },
+            outlets: ['alpha', 'beta'], status: 'confirmed' },
+          { claim: { en: 'Nobody', hi: 'कोई नहीं' }, claimed_by: { en: 'x', hi: 'y' }, outlets: ['ghost'], status: 'disputed' },
+        ],
         debate: {
           question: { en: 'Should the bill exempt state agencies?', hi: 'क्या विधेयक में सरकारी एजेंसियों को छूट मिलनी चाहिए?' },
           for: [{ en: 'Alpha reports the government says it aids security.', hi: 'सरकार का कहना...', outlets: ['alpha'] }],
@@ -78,6 +84,10 @@ async function seed(client: Client): Promise<void> {
   );
   await client.query(`
     INSERT INTO story_redirects (from_id, to_id) VALUES (99, 10);
+    UPDATE articles SET image_url = 'https://img.example/data-bill.jpg' WHERE url = 'https://b.example/1';
+    UPDATE stories SET category = 'sports' WHERE id = 11;
+    INSERT INTO headline_edits (article_id, old_title, new_title)
+      SELECT id, 'Data bill passed', title FROM articles WHERE url = 'https://b.example/1';
     INSERT INTO pipeline_runs (finished_at, feeds_ok, feeds_failed, articles_new, analyses, input_tokens, output_tokens)
     VALUES (now(), 22, 1, 40, 2, 2000, 1000);`);
 }
@@ -118,7 +128,7 @@ describeDb('Nazariya API (e2e)', () => {
     expect(ids).toEqual([10, 11, 12]);
     const top = res.body.items[0];
     expect(top.headline.en).toBe('Parliament passes data protection bill');
-    expect(top.coverage).toEqual({ en: 2, hi: 1 });
+    expect(top.coverage).toEqual({ en: 2, hi: 1, other: 0 });
     expect(top.analyzed).toBe(true);
     expect(top.debate.forCount).toBe(1);
     expect(res.body.items[1].debate).toBeNull();
@@ -140,6 +150,13 @@ describeDb('Nazariya API (e2e)', () => {
     await client.end();
   });
 
+  it('filters by topic', async () => {
+    const res = await request(server).get('/api/stories?category=sports&v=cat').expect(200);
+    expect(res.body.items.map((s: { id: number }) => s.id)).toEqual([11]);
+    expect(res.body.items[0].category).toBe('sports');
+    await request(server).get('/api/stories?category=gossip').expect(400);
+  });
+
   it('filters to stories covered in both languages', async () => {
     const res = await request(server).get('/api/stories?filter=both-languages').expect(200);
     expect(res.body.items.map((s: { id: number }) => s.id)).toEqual([10]);
@@ -159,10 +176,18 @@ describeDb('Nazariya API (e2e)', () => {
     expect(story.analysis.framing[0].outlet.name).toBe('Beta Times');
     expect(story.analysis.model).toBe('test-model');
     expect(story.analysis.debate.question.en).toMatch(/^Should/);
+    expect(story.analysis.claims).toHaveLength(1); // the claim carried by no outlet in the story is dropped
+    expect(story.analysis.claims[0].outlets.find((o: { slug: string }) => o.slug === 'beta'))
+      .toMatchObject({ country: 'IR', ownership: 'state' });
     expect(story.analysis.debate.against[0].outlets.map((o: { slug: string }) => o.slug)).toEqual(['beta', 'gamma']);
     expect(story.debate).toEqual({ question: story.analysis.debate.question, forCount: 1, againstCount: 1 });
     expect(story.timeline.reduce((n: number, t: { en: number; hi: number }) => n + t.en + t.hi, 0)).toBe(3);
     expect(story.outlets.find((o: { slug: string }) => o.slug === 'gamma').mediaGroup).toBe('Alpha Group');
+    expect(story.image).toEqual({ url: 'https://img.example/data-bill.jpg', outlet: 'Beta Times', articleUrl: 'https://b.example/1' });
+    expect(story.headlineEdited).toBe(true);
+    expect(story.headlineEdits[0]).toMatchObject({ oldTitle: 'Data bill passed', outlet: { slug: 'beta' } });
+    expect(story.firstReports.map((f: { language: string }) => f.language)).toEqual(['en', 'hi']);
+    expect(story.firstReports[0].outlet.slug).toBe('alpha');
   });
 
   it('follows redirects for merged stories and 404s for unknown ones', async () => {
@@ -203,7 +228,8 @@ describeDb('Nazariya API (e2e)', () => {
 
   it('GET /api/stats reports counts and AI cost', async () => {
     const res = await request(server).get('/api/stats').expect(200);
-    expect(res.body.outlets).toEqual({ total: 5, en: 2, hi: 3 });
+    expect(res.body.outlets).toEqual({ total: 5, en: 2, hi: 3, other: 0, countries: 2, languages: 2 });
+    expect(res.body.headlineEdits24h).toBe(1);
     expect(res.body.crossLanguageStories).toBe(1);
     expect(res.body.lastRun.feedsOk).toBe(22);
     // 2000 input tokens at $1/M + 1000 output tokens at $5/M = $0.007

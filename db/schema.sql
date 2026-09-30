@@ -148,3 +148,53 @@ CREATE TABLE IF NOT EXISTS story_feedback (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS story_feedback_open_idx ON story_feedback (created_at DESC) WHERE NOT resolved;
+
+-- ---------- Global coverage ----------
+-- Any language now, not only English and Hindi (ISO 639-1 codes: en, hi, ar, fa, ur, fr...).
+ALTER TABLE outlets DROP CONSTRAINT IF EXISTS outlets_language_check;
+ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_language_check;
+-- Where an outlet is based (ISO 3166 code) and who owns it: 'private', 'public'
+-- (publicly funded broadcaster with an editorial-independence charter) or 'state'
+-- (run or funded by a government). Factual ownership, applied the same way to every country.
+ALTER TABLE outlets ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT 'IN';
+ALTER TABLE outlets ADD COLUMN IF NOT EXISTS ownership TEXT NOT NULL DEFAULT 'private';
+
+-- ---------- Sections, triage, headline edits ----------
+-- Section of the feed an article came from (sports, entertainment…), when the feed has one.
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS category TEXT;
+-- Story section: from its feeds' sections, or from the AI triage.
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS category TEXT;
+-- Triage verdict: does this story have two sides worth comparing? NULL = not triaged yet.
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS contested BOOLEAN;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS triaged_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS stories_category_idx ON stories (category, last_article_at DESC);
+
+-- Headlines that outlets changed after publishing ("stealth edits").
+CREATE TABLE IF NOT EXISTS headline_edits (
+  id          BIGSERIAL PRIMARY KEY,
+  article_id  BIGINT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  old_title   TEXT NOT NULL,
+  new_title   TEXT NOT NULL,
+  seen_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS headline_edits_recent_idx ON headline_edits (seen_at DESC);
+CREATE INDEX IF NOT EXISTS headline_edits_article_idx ON headline_edits (article_id);
+
+-- ---------- Pictures, categories, headline edits ----------
+-- The image the outlet published with the item in its own feed (hotlinked, credited, linked back).
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_url TEXT;
+-- Topic of the feed the article came from: politics, business, sports, entertainment,
+-- technology, science, health or general.
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general';
+CREATE INDEX IF NOT EXISTS stories_category_idx ON stories (category, last_article_at DESC);
+
+-- Outlets sometimes change a headline after publishing. Every change seen in a feed is kept.
+CREATE TABLE IF NOT EXISTS headline_edits (
+  id          BIGSERIAL PRIMARY KEY,
+  article_id  BIGINT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  old_title   TEXT NOT NULL,
+  new_title   TEXT NOT NULL,
+  seen_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS headline_edits_article_idx ON headline_edits (article_id);

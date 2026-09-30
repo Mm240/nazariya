@@ -88,3 +88,31 @@ def test_embedding_text():
     assert embedding_text("Headline", None) == "Headline"
     assert embedding_text("Headline", "x" * 500).startswith("Headline. xxx")
     assert len(embedding_text("Headline", "x" * 500)) == len("Headline. ") + 160
+
+
+
+def test_non_english_non_hindi_feeds_keep_their_language():
+    from datetime import datetime, timezone
+
+    from nazariya.config import Feed
+    from nazariya.normalize import normalize_entry
+
+    feed = Feed("bbc-persian", "BBC Persian", "fa", "https://x.example/rss", country="GB", ownership="public")
+    now = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
+    entry = {"title": "حمله هوایی در شب گذشته", "link": "https://x.example/a", "published_parsed": now.timetuple()}
+    c = normalize_entry(entry, feed, now, 48)
+    assert c is not None and c.language == "fa"
+
+
+def test_images_come_from_media_tags_enclosures_or_the_summary():
+    from nazariya.normalize import extract_image
+
+    assert extract_image({"media_content": [{"url": "https://img.example/a.jpg", "medium": "image"}]}) == \
+        "https://img.example/a.jpg"
+    assert extract_image({"media_thumbnail": [{"url": "//img.example/t.jpg"}]}) == "https://img.example/t.jpg"
+    assert extract_image({"enclosures": [{"href": "https://img.example/e.png", "type": "image/png"}]}) == \
+        "https://img.example/e.png"
+    assert extract_image({"summary": '<p><img src="https://img.example/s.webp?a=1&amp;b=2"> text</p>'}) == \
+        "https://img.example/s.webp?a=1&b=2"
+    assert extract_image({"media_content": [{"url": "https://v.example/clip.mp4", "medium": "video"}]}) is None
+    assert extract_image({"summary": "no pictures here"}) is None

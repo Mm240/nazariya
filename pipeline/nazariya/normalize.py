@@ -32,6 +32,35 @@ class ArticleCandidate:
     language: str
     published_at: datetime
     section: str = "india"
+    image_url: str | None = None
+    category: str = "general"
+
+
+_IMG_SRC_RE = re.compile(r"""<img[^>]+src=["']([^"']+)["']""", re.I)
+
+
+def extract_image(entry: dict) -> str | None:
+    """The picture the outlet attached to this item in its own feed, if any."""
+    candidates: list[str] = []
+    for key in ("media_content", "media_thumbnail"):
+        for m in entry.get(key) or []:
+            if isinstance(m, dict) and m.get("url") and m.get("medium", "image") in ("image", None, ""):
+                candidates.append(m["url"])
+    for link in entry.get("links") or []:
+        if isinstance(link, dict) and link.get("rel") == "enclosure" and str(link.get("type", "")).startswith("image"):
+            candidates.append(link.get("href", ""))
+    for enc in entry.get("enclosures") or []:
+        if isinstance(enc, dict) and str(enc.get("type", "")).startswith("image"):
+            candidates.append(enc.get("href") or enc.get("url") or "")
+    html_blob = entry.get("summary") or entry.get("description") or ""
+    candidates += _IMG_SRC_RE.findall(html_blob)
+    for url in candidates:
+        url = (url or "").strip().replace("&amp;", "&")
+        if url.startswith("//"):
+            url = "https:" + url
+        if url.startswith("https://") or url.startswith("http://"):
+            return url[:1000]
+    return None
 
 
 def clean_text(value: str | None) -> str:
@@ -126,13 +155,17 @@ def normalize_entry(
 
     canonical = canonical_url(link)
     return ArticleCandidate(
+        image_url=extract_image(entry),
+        category=feed.category,
         outlet_slug=feed.outlet,
         section=feed.section,
         url=canonical,
         url_hash=url_hash(canonical),
         title=title,
         excerpt=excerpt or None,
-        language=detect_language(title, fallback=feed.language),
+        # Hindi and English feeds sometimes carry the other language; other feeds are one language.
+        language=(detect_language(title, fallback=feed.language)
+                  if feed.language in ("en", "hi") else feed.language),
         published_at=published_at,
     )
 
