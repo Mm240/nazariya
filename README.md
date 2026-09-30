@@ -6,6 +6,8 @@
 
 It never labels outlets as left, right or biased. It puts what each one published side by side and lets the reader compare.
 
+Link: https://nazariya-six.vercel.app/
+
 ## What it does
 
 - **Cross-language story clustering.** A Hindi headline and an English headline about the same event land in the same story, using a multilingual embedding model trained so that translations sit close together in vector space.
